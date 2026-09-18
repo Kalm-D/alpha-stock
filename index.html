@@ -1,0 +1,2904 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Alpha Stock v1.20 PRO</title>
+  <meta name="description" content="Alpha Stock — phân tích và sàng lọc cổ phiếu Việt Nam từ dữ liệu giá." />
+  <link rel="icon" type="image/png" href="alpha-stock-logo.png" />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #11182b;
+      --panel-2: #17213a;
+      --panel-3: #1f2c4d;
+      --text: #eef3ff;
+      --muted: #9fb0d0;
+      --line: rgba(255,255,255,.10);
+      --good: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+      --info: #60a5fa;
+      --purple: #a78bfa;
+      --shadow: 0 14px 40px rgba(0,0,0,.28);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: radial-gradient(circle at top left, rgba(96,165,250,.15), transparent 34%), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    button, input, select { font: inherit; }
+    .app {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      color: #06101f;
+      font-weight: 900;
+      font-size: 20px;
+      box-shadow: var(--shadow);
+    }
+    h1 { margin: 0; font-size: 24px; letter-spacing: -.02em; }
+    .subtitle { color: var(--muted); margin-top: 4px; font-size: 14px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+    .btn {
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: var(--panel-2);
+      padding: 10px 13px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); background: var(--panel-3); }
+    .btn.primary { background: linear-gradient(135deg, #60a5fa, #a78bfa); color: #07111f; border: 0; font-weight: 800; }
+    .btn.good { background: rgba(52,211,153,.13); border-color: rgba(52,211,153,.35); color: #b8f7dc; }
+    .btn.warn { background: rgba(251,191,36,.13); border-color: rgba(251,191,36,.35); color: #ffe5a3; }
+    .btn.bad { background: rgba(251,113,133,.12); border-color: rgba(251,113,133,.35); color: #ffd0d7; }
+    .btn.small { padding: 7px 10px; font-size: 13px; border-radius: 10px; }
+    input[type="file"] { display: none; }
+    .grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .panel {
+      background: rgba(17,24,43,.82);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .panel-title { font-weight: 850; letter-spacing: -.01em; }
+    .panel-body { padding: 16px; }
+    .settings { position: sticky; top: 18px; }
+    .setting-group { margin-bottom: 17px; }
+    .setting-group h3 { margin: 0 0 10px; font-size: 13px; color: #cbd8f7; text-transform: uppercase; letter-spacing: .06em; }
+    .field { display: grid; grid-template-columns: 1fr 104px; gap: 10px; align-items: center; margin: 9px 0; }
+    .field label { color: var(--muted); font-size: 13px; line-height: 1.3; }
+    .field input, .field select, .search input {
+      width: 100%;
+      background: #0d1426;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 10px;
+      outline: none;
+    }
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      background: rgba(96,165,250,.07);
+      border: 1px dashed rgba(96,165,250,.24);
+      padding: 10px;
+      border-radius: 12px;
+    }
+    .status-line { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .card {
+      background: rgba(17,24,43,.72);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 15px;
+      box-shadow: var(--shadow);
+    }
+    .metric { font-size: 29px; font-weight: 900; letter-spacing: -.04em; margin: 7px 0 2px; }
+    .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+    .submetric { color: var(--muted); font-size: 13px; }
+    .pipeline { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 10px; margin-bottom: 18px; }
+    .stage {
+      background: rgba(23,33,58,.86);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      cursor: pointer;
+      min-height: 82px;
+      position: relative;
+    }
+    .stage:hover, .stage.active { border-color: rgba(96,165,250,.65); background: rgba(96,165,250,.12); }
+    .stage .num { font-size: 23px; font-weight: 900; margin-top: 5px; }
+    .stage .name { color: #dbe7ff; font-weight: 700; font-size: 13px; }
+    .stage .desc { color: var(--muted); font-size: 11px; margin-top: 3px; line-height: 1.35; }
+    .toolbar { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 12px; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab { padding: 8px 11px; border: 1px solid var(--line); background: #11182b; border-radius: 999px; cursor: pointer; color: var(--muted); font-size: 13px; }
+    .tab.active { background: rgba(96,165,250,.14); color: #dceaff; border-color: rgba(96,165,250,.50); }
+    .search { min-width: 260px; max-width: 360px; flex: 1; }
+    .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 16px; max-height: 650px; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 1240px; }
+    th, td { padding: 10px 11px; text-align: left; border-bottom: 1px solid var(--line); font-size: 13px; white-space: nowrap; }
+    th { position: sticky; top: 0; background: #0f172a; z-index: 1; color: #cfddfb; cursor: pointer; user-select: none; }
+    tr:hover td { background: rgba(96,165,250,.06); }
+    .ticker { font-weight: 900; letter-spacing: .03em; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); color: var(--muted); }
+    .pill.good { background: rgba(52,211,153,.11); border-color: rgba(52,211,153,.28); color: #bbf7d0; }
+    .pill.warn { background: rgba(251,191,36,.11); border-color: rgba(251,191,36,.28); color: #fde68a; }
+    .pill.bad { background: rgba(251,113,133,.11); border-color: rgba(251,113,133,.28); color: #fecdd3; }
+    .pill.info { background: rgba(96,165,250,.11); border-color: rgba(96,165,250,.28); color: #bfdbfe; }
+    .pill.purple { background: rgba(167,139,250,.12); border-color: rgba(167,139,250,.30); color: #ddd6fe; }
+    .money, .numcell { font-family: var(--mono); }
+    .muted { color: var(--muted); }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+    .mini { background: rgba(13,20,38,.55); border: 1px solid var(--line); border-radius: 14px; padding: 13px; }
+    .mini h3 { margin: 0 0 8px; font-size: 14px; }
+    .mini p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.62); display: none; align-items: center; justify-content: center; padding: 18px; z-index: 20;
+    }
+    .modal {
+      width: min(1050px, 96vw); max-height: 92vh; overflow: auto;
+      background: #0d1426; border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 30px 90px rgba(0,0,0,.5);
+    }
+    .modal-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; padding: 18px; border-bottom: 1px solid var(--line); }
+    .modal-body { padding: 18px; }
+    .chartbox { background: #081124; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; padding: 12px; }
+    canvas { width: 100%; height: 320px; display: block; }
+    .detail-grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 14px; }
+    .facts { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .fact { background: rgba(17,24,43,.78); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+    .fact .k { color: var(--muted); font-size: 12px; }
+    .fact .v { font-weight: 850; margin-top: 4px; }
+    .footer-note { margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .empty { text-align: center; padding: 34px; color: var(--muted); }
+    .toast { position: fixed; right: 22px; bottom: 22px; background: #11182b; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow); display: none; z-index: 30; color: #eaf1ff; }
+
+
+    /* Layout update v1.1: ưu tiên kéo dọc trang, không cần cuộn ngang */
+    .app { max-width: 1180px; }
+    .grid { grid-template-columns: 320px minmax(0, 1fr); }
+    .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pipeline { grid-template-columns: 1fr; gap: 8px; }
+    .stage {
+      min-height: 62px;
+      display: grid;
+      grid-template-columns: 180px 70px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+    }
+    .stage .num { margin-top: 0; text-align: center; font-size: 22px; }
+    .stage .desc { margin-top: 0; }
+    .table-wrap {
+      overflow: visible;
+      max-height: none;
+      border: 0;
+      border-radius: 0;
+    }
+    .table-wrap table {
+      width: 100%;
+      min-width: 0;
+      display: block;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .table-wrap thead { display: none; }
+    .table-wrap tbody {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .table-wrap tr {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 11px;
+      background: rgba(13, 20, 38, .56);
+    }
+    .table-wrap tr:hover td { background: rgba(96,165,250,.08); }
+    .table-wrap td {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+      min-height: 55px;
+      padding: 8px 9px;
+      border: 1px solid rgba(255,255,255,.075);
+      border-radius: 11px;
+      background: rgba(17,24,43,.56);
+      white-space: normal;
+      overflow-wrap: anywhere;
+      line-height: 1.25;
+      font-size: 12px;
+    }
+    .table-wrap td::before {
+      content: attr(data-label);
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .055em;
+      margin-bottom: 5px;
+    }
+    .table-wrap td.stock-main {
+      background: rgba(96,165,250,.11);
+      border-color: rgba(96,165,250,.22);
+    }
+    .table-wrap td.actions-cell {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 7px;
+    }
+    .table-wrap td.actions-cell::before { width: 100%; margin-bottom: 0; }
+    .table-wrap .pill { width: fit-content; }
+    .toolbar { align-items: stretch; }
+    .search { min-width: min(260px, 100%); }
+
+
+    .progress-wrap {
+      margin-top: 10px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      height: 10px;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa);
+      transition: width .2s ease;
+    }
+
+    .quality-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .quality-box { background: rgba(255,255,255,.045); border: 1px solid var(--line); border-radius: 14px; padding: 13px; }
+    .quality-box .k { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+    .quality-box .v { font-size: 22px; font-weight: 900; }
+    .quality-box .s { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .quality-notes { color: var(--muted); font-size: 13px; line-height: 1.55; margin-top: 10px; }
+    .quality-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    .quality-table th, .quality-table td { border-bottom: 1px solid var(--line); padding: 9px 8px; text-align: left; }
+    .quality-table th { color: var(--muted); font-weight: 700; }
+    .muted-small { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+
+    .clickable-card, .quality-box, .track-card { cursor: pointer; transition: .15s ease; }
+    .clickable-card:hover, .quality-box:hover, .quality-box.active, .track-card:hover, .track-card.active {
+      transform: translateY(-1px);
+      border-color: rgba(96,165,250,.62);
+      background: rgba(96,165,250,.10);
+    }
+    .result-hint {
+      background: rgba(96,165,250,.07);
+      border: 1px dashed rgba(96,165,250,.24);
+      border-radius: 14px;
+      padding: 14px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 12px 0;
+    }
+    .is-hidden { display: none !important; }
+    .quality-table-wrap { margin-top: 12px; }
+    .quality-list-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .quality-list-head .status-line { margin-bottom: 0; }
+    @media (max-width: 720px) { .quality-list-head { align-items: stretch; flex-direction: column; } .quality-list-head .btn { width: 100%; } }
+
+    .source-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .settings { position: static; }
+      .cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .pipeline { grid-template-columns: 1fr; }
+      .quality-grid { grid-template-columns: 1fr 1fr; }
+      .stage { grid-template-columns: 150px 58px minmax(0,1fr); }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .app { padding: 14px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .cards { grid-template-columns: 1fr; }
+      .quality-grid { grid-template-columns: 1fr; }
+      .pipeline { grid-template-columns: 1fr; }
+      .quality-grid { grid-template-columns: 1fr 1fr; }
+      .stage { grid-template-columns: 1fr; text-align: left; }
+      .stage .num { text-align: left; }
+      .split { grid-template-columns: 1fr; }
+      .field { grid-template-columns: 1fr; }
+    }
+  
+
+    /* v1.11 professional layout overrides */
+    body {
+      background:
+        radial-gradient(circle at 0% 0%, rgba(37, 99, 235, .16), transparent 26%),
+        radial-gradient(circle at 100% 0%, rgba(14, 165, 233, .12), transparent 24%),
+        linear-gradient(180deg, #07101f 0%, #0b1222 100%);
+      color: #e8eefc;
+    }
+    .app { max-width: 1580px; padding-top: 12px; }
+    .topbar {
+      position: sticky; top: 0; z-index: 15;
+      padding: 14px 18px; margin-bottom: 18px;
+      background: rgba(7, 16, 31, .78);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 22px;
+      backdrop-filter: blur(16px);
+      display: grid;
+      grid-template-columns: 260px minmax(240px, 1fr) 280px auto;
+      gap: 16px;
+      align-items: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,.28);
+    }
+    .brand-top .subtitle { font-size: 12px; line-height: 1.45; margin-top: 6px; }
+    .header-search input {
+      width: 100%; background: rgba(17,24,43,.72); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px; padding: 14px 16px; color: var(--text); outline: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    .header-market {
+      padding: 10px 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,.08);
+      background: rgba(9, 16, 31, .68);
+    }
+    .market-line { display: flex; align-items: center; gap: 8px; font-weight: 700; white-space: nowrap; }
+    .market-name { color: #d6e2fb; font-size: 13px; }
+    .market-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display:inline-block; }
+    .market-price { color: #ffffff; }
+    .market-up { color: var(--good); }
+    .market-sub { margin-top: 4px; color: var(--good); font-size: 12px; }
+    .actions { gap: 8px; }
+    .actions .btn { padding: 10px 12px; }
+    .grid { grid-template-columns: 300px minmax(0, 1fr); gap: 18px; }
+    .settings {
+      overflow: hidden; background: rgba(10, 18, 34, .86); border-radius: 24px;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .sidebar-shell { padding: 18px 18px 0; }
+    .sidebar-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .logo-small { width: 42px; height: 42px; border-radius: 14px; font-size: 16px; }
+    .sidebar-brand-title { font-size: 18px; font-weight: 800; }
+    .sidebar-brand-sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .sidebar-nav { display: grid; gap: 8px; margin-bottom: 10px; }
+    .nav-link {
+      text-decoration: none; color: #c9d7f1; padding: 11px 12px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.06); background: rgba(17,24,43,.52);
+      transition: .15s ease;
+    }
+    .nav-link:hover, .nav-link.active { background: rgba(37,99,235,.18); border-color: rgba(96,165,250,.35); color: #fff; }
+    .settings .panel-head {
+      padding: 14px 18px 12px; margin: 12px 18px 0; border: 1px solid rgba(255,255,255,.06); border-radius: 18px 18px 0 0;
+      background: rgba(17,24,43,.55);
+    }
+    .settings .panel-body {
+      margin: 0 18px 18px; padding: 18px; border-radius: 0 0 18px 18px;
+      border: 1px solid rgba(255,255,255,.06); border-top: 0; background: rgba(11,17,31,.72);
+    }
+    .setting-group h3 { color: #e6eeff; }
+    .field input, .field select, .search input { border-radius: 12px; padding: 12px 12px; background: #0d1529; }
+    .hint { background: rgba(37,99,235,.09); border-color: rgba(96,165,250,.18); }
+    .sidebar-service-card {
+      margin-top: 16px; padding: 16px; border-radius: 18px; border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(17,24,43,.72), rgba(12,18,34,.72));
+    }
+    .service-title { font-size: 28px; font-weight: 800; margin: 6px 0 10px; }
+    .service-row { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); margin: 8px 0; }
+    .sidebar-support {
+      margin-top: 12px; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,.08);
+      background: rgba(17,24,43,.48); color: #dce7fb; font-weight: 600;
+    }
+    .cards { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+    .card, .panel, .mini, .quality-box, .stage {
+      background: linear-gradient(180deg, rgba(16,24,43,.88), rgba(10,16,30,.92));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px;
+    }
+    .card { padding: 18px; }
+    .metric { font-size: 34px; }
+    .label { font-size: 11px; color: #93a4c8; }
+    .quality-grid { grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
+    .pipeline { grid-template-columns: repeat(7, minmax(140px, 1fr)); gap: 12px; }
+    .stage {
+      min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;
+      gap: 6px; padding: 16px; border-radius: 18px;
+    }
+    .stage .name { font-size: 14px; font-weight: 800; }
+    .stage .num { font-size: 34px; text-align: left; }
+    .split { grid-template-columns: 1fr 1fr; }
+    .toolbar { margin-top: 8px; margin-bottom: 14px; }
+    .search { max-width: 420px; }
+    .search input { border-radius: 14px; }
+    .table-wrap {
+      overflow: auto; max-height: none; border: 1px solid rgba(255,255,255,.08); border-radius: 18px; background: rgba(9,15,28,.52);
+    }
+    .table-wrap table { width: 100%; min-width: 1320px; display: table; }
+    .table-wrap thead { display: table-header-group; }
+    .table-wrap tbody { display: table-row-group; }
+    .table-wrap tr { display: table-row; border: 0; border-radius: 0; padding: 0; background: transparent; }
+    .table-wrap td, .table-wrap th {
+      display: table-cell; min-height: 0; padding: 12px 12px; border: 0; border-bottom: 1px solid rgba(255,255,255,.06);
+      white-space: nowrap; background: transparent; font-size: 13px;
+    }
+    .table-wrap td::before { display: none; }
+    .table-wrap td.stock-main { background: transparent; border-color: transparent; }
+    .table-wrap td.actions-cell { display: table-cell; }
+    .table-wrap tr:hover td { background: rgba(37, 99, 235, .06); }
+    .result-hint { background: rgba(37,99,235,.08); border-color: rgba(96,165,250,.18); }
+    .quality-box .v { font-size: 34px; }
+    .quality-table-wrap { border-top: 1px solid rgba(255,255,255,.06); padding-top: 12px; }
+    @media (max-width: 1400px) {
+      .topbar { grid-template-columns: 240px 1fr; }
+      .header-market { order: 3; }
+      .actions { order: 4; justify-content: flex-start; }
+      .cards { grid-template-columns: repeat(3, minmax(0,1fr)); }
+      .pipeline { grid-template-columns: repeat(4, minmax(140px,1fr)); }
+    }
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .topbar { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .pipeline { grid-template-columns: repeat(2, minmax(140px,1fr)); }
+      .table-wrap { overflow: visible; border: 0; }
+      .table-wrap table { width: 100%; min-width: 0; display: block; }
+      .table-wrap thead { display: none; }
+      .table-wrap tbody { display: grid; grid-template-columns: 1fr; gap: 12px; }
+      .table-wrap tr { display: grid; grid-template-columns: repeat(auto-fit, minmax(138px, 1fr)); gap: 8px; border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 11px; background: rgba(13, 20, 38, .56); }
+      .table-wrap td { display: flex; flex-direction: column; justify-content: center; min-height: 55px; padding: 8px 9px; border: 1px solid rgba(255,255,255,.075); border-radius: 11px; background: rgba(17,24,43,.56); white-space: normal; }
+      .table-wrap td::before { display:block; content: attr(data-label); color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .055em; margin-bottom: 5px; }
+      .table-wrap td.actions-cell { display:flex; flex-wrap:wrap; gap:7px; }
+    }
+    @media (max-width: 720px) {
+      .app { padding: 10px; }
+      .cards { grid-template-columns: 1fr; }
+      .pipeline, .quality-grid, .split { grid-template-columns: 1fr; }
+      .panel-head, .topbar { padding: 14px; }
+    }
+
+  
+
+    /* v1.12 clean black layout overrides */
+    body {
+      background: #000000 !important;
+      color: #f3f7ff;
+    }
+    body::before, body::after { content: none !important; }
+    .app { max-width: 1600px; }
+    .topbar {
+      background: rgba(4, 7, 14, 0.96) !important;
+      border-color: rgba(88, 120, 255, .16) !important;
+      box-shadow: 0 18px 50px rgba(0,0,0,.45) !important;
+    }
+    .settings, .panel, .card, .quality-box, .stage, .table-wrap, .header-market {
+      background: linear-gradient(180deg, rgba(4,9,20,.98), rgba(7,13,26,.98)) !important;
+      border-color: rgba(116, 147, 255, .15) !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,.22);
+    }
+    .sidebar-shell {
+      padding: 18px 18px 4px !important;
+    }
+    .sidebar-brand {
+      align-items: center;
+      padding: 8px 2px 2px;
+      margin-bottom: 2px;
+    }
+    .sidebar-brand-sub { color: #9fb2d8; }
+    .panel-head { margin-top: 6px !important; }
+    .brand-logo-img {
+      display: block;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 18px rgba(19, 191, 255, 0.10));
+      flex: 0 0 auto;
+    }
+    .top-logo {
+      width: 62px;
+      height: 62px;
+      border-radius: 16px;
+      background: rgba(8,14,28,.8);
+      padding: 6px;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .side-logo {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      background: rgba(8,14,28,.82);
+      padding: 6px;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .header-search input {
+      background: rgba(3, 8, 18, 0.95) !important;
+      color: #eef4ff !important;
+    }
+    .field input, .field select, .search input {
+      background: rgba(5, 10, 20, 0.98) !important;
+      color: #ffffff !important;
+    }
+    .table-wrap {
+      background: rgba(2,6,14,.96) !important;
+    }
+    .table-wrap td, .table-wrap th {
+      border-bottom-color: rgba(135,150,189,.10) !important;
+    }
+    .table-wrap tr:hover td { background: rgba(42, 87, 255, .08) !important; }
+    .quality-box.active {
+      box-shadow: 0 0 0 1px rgba(138,170,255,.40), 0 12px 34px rgba(46, 76, 180, .18) !important;
+    }
+    .source-note { display: none !important; }
+    .sidebar-service-card, .sidebar-support, .sidebar-nav { display: none !important; }
+    .brand-top h1, .sidebar-brand-title, .panel-title, .section-title { color: #f3f6ff; }
+    .subtitle, .muted, .muted-small, .section-sub, .label, .market-name { color: #9eb2d7 !important; }
+    .topbar .actions .btn { box-shadow: none; }
+
+  
+
+    /* v1.13 refined fintech header + pure black theme */
+    html, body {
+      background: #000000 !important;
+    }
+    body {
+      background: #000000 !important;
+      color: #f5f8ff;
+    }
+    .app {
+      max-width: 1600px;
+      padding-top: 10px;
+    }
+    .topbar {
+      grid-template-columns: 250px minmax(260px, 1fr) max-content auto !important;
+      gap: 12px !important;
+      padding: 12px 16px !important;
+      border-radius: 20px !important;
+      background: #03070f !important;
+      border: 1px solid rgba(120, 140, 180, .16) !important;
+      box-shadow: none !important;
+    }
+    .brand-top {
+      gap: 12px !important;
+      align-items: center !important;
+    }
+    .brand-top h1 {
+      font-size: 18px !important;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+    .brand-top .subtitle {
+      font-size: 11px !important;
+      line-height: 1.4 !important;
+      color: #91a5cb !important;
+      margin-top: 0 !important;
+      max-width: 250px;
+    }
+    .top-logo {
+      width: 50px !important;
+      height: 50px !important;
+      border-radius: 14px !important;
+      padding: 5px !important;
+      background: #07111f !important;
+    }
+    .side-logo {
+      width: 46px !important;
+      height: 46px !important;
+      border-radius: 12px !important;
+      padding: 5px !important;
+      background: #07111f !important;
+    }
+    .header-search {
+      min-width: 0;
+    }
+    .header-search input {
+      height: 56px;
+      border-radius: 16px !important;
+      padding: 0 16px !important;
+      background: #050b16 !important;
+      border: 1px solid rgba(120, 140, 180, .12) !important;
+    }
+    .header-market {
+      width: max-content !important;
+      min-width: 0 !important;
+      padding: 10px 14px !important;
+      border-radius: 16px !important;
+      background: #050b16 !important;
+      border: 1px solid rgba(120, 140, 180, .12) !important;
+      box-shadow: none !important;
+    }
+    .market-line {
+      display: flex !important;
+      align-items: baseline !important;
+      gap: 10px !important;
+      white-space: nowrap;
+      flex-wrap: nowrap !important;
+    }
+    .market-name { font-size: 13px !important; }
+    .market-price { font-size: 16px !important; font-weight: 800; }
+    .market-up { font-size: 14px !important; font-weight: 800; color: #2dd4a3 !important; }
+    .market-sub { font-size: 12px !important; color: #2dd4a3 !important; }
+    .actions {
+      justify-content: flex-end !important;
+      align-items: center !important;
+      gap: 10px !important;
+      flex-wrap: nowrap !important;
+    }
+    .actions .btn {
+      padding: 11px 16px !important;
+      border-radius: 16px !important;
+      font-weight: 700;
+      border-width: 1px !important;
+      box-shadow: none !important;
+      transition: all .15s ease;
+    }
+    .actions .btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+    }
+    .actions label.btn[for="csvInput"] {
+      background: rgba(90, 112, 170, .18) !important;
+      border-color: rgba(128, 153, 225, .22) !important;
+      color: #dbe6ff !important;
+    }
+    #loadDemoBtn {
+      background: rgba(20, 124, 94, .22) !important;
+      border-color: rgba(45, 212, 163, .26) !important;
+      color: #a7f3d0 !important;
+    }
+    #updateFreeDataBtn {
+      background: rgba(139, 105, 18, .22) !important;
+      border-color: rgba(245, 192, 71, .26) !important;
+      color: #fde68a !important;
+    }
+    #cancelUpdateBtn {
+      background: rgba(127, 29, 29, .22) !important;
+      border-color: rgba(248, 113, 113, .24) !important;
+      color: #fecaca !important;
+    }
+    #runBtn {
+      background: linear-gradient(135deg, rgba(119,132,255,.95), rgba(157,124,255,.96)) !important;
+      border-color: rgba(187, 166, 255, .42) !important;
+      color: #050916 !important;
+    }
+    .settings, .panel, .card, .quality-box, .stage, .table-wrap, .header-market {
+      background: #040913 !important;
+      border: 1px solid rgba(120, 140, 180, .12) !important;
+      box-shadow: none !important;
+    }
+    .settings .panel-head {
+      background: #07101c !important;
+      border-color: rgba(120, 140, 180, .12) !important;
+      margin-top: 0 !important;
+    }
+    .settings .panel-body {
+      background: #040913 !important;
+      border-color: rgba(120, 140, 180, .12) !important;
+    }
+    .field input, .field select, .search input {
+      background: #050b16 !important;
+      border: 1px solid rgba(120, 140, 180, .12) !important;
+    }
+    .hint, .result-hint {
+      background: rgba(29, 78, 216, .08) !important;
+      border-color: rgba(96, 165, 250, .16) !important;
+    }
+    .sidebar-brand {
+      padding: 6px 2px 4px !important;
+      margin-bottom: 6px !important;
+    }
+    .sidebar-brand-title { font-size: 17px !important; }
+    .sidebar-brand-sub { font-size: 12px !important; }
+    .panel-title { font-size: 16px !important; }
+    .cards { gap: 12px !important; }
+    .card {
+      border-radius: 18px !important;
+      padding: 16px !important;
+    }
+    .metric { font-size: 30px !important; }
+    .quality-box, .stage {
+      border-radius: 18px !important;
+    }
+    .table-wrap {
+      background: #040913 !important;
+    }
+    .table-wrap tr:hover td { background: rgba(95, 111, 173, .07) !important; }
+    .table-wrap td, .table-wrap th {
+      border-bottom-color: rgba(120, 140, 180, .10) !important;
+    }
+    @media (max-width: 1450px) {
+      .topbar {
+        grid-template-columns: 240px minmax(240px,1fr) auto !important;
+      }
+      .actions {
+        grid-column: 1 / -1;
+        justify-content: flex-end !important;
+      }
+    }
+    @media (max-width: 1100px) {
+      .topbar { grid-template-columns: 1fr !important; }
+      .header-market { width: 100% !important; }
+      .market-line { justify-content: flex-start; }
+      .actions { flex-wrap: wrap !important; justify-content: flex-start !important; }
+      .brand-top .subtitle { max-width: none; }
+    }
+
+  
+
+    /* v1.14 optimize result list without horizontal scroll */
+    #resultTableWrap {
+      overflow: visible !important;
+      max-height: none !important;
+      border: 0 !important;
+      background: transparent !important;
+    }
+    #resultTableWrap table {
+      width: 100% !important;
+      min-width: 0 !important;
+      display: block !important;
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+    }
+    #resultTableWrap thead {
+      display: none !important;
+    }
+    #resultTableWrap tbody {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      gap: 12px !important;
+    }
+    #resultTableWrap tr {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(122px, 1fr)) !important;
+      gap: 8px !important;
+      border: 1px solid rgba(120, 140, 180, .12) !important;
+      border-radius: 16px !important;
+      padding: 10px !important;
+      background: #040913 !important;
+    }
+    #resultTableWrap tr:hover td {
+      background: rgba(95,111,173,.08) !important;
+    }
+    #resultTableWrap td {
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      min-width: 0 !important;
+      min-height: 56px !important;
+      padding: 8px 10px !important;
+      border: 1px solid rgba(120, 140, 180, .10) !important;
+      border-radius: 12px !important;
+      background: #07101c !important;
+      white-space: normal !important;
+      overflow-wrap: anywhere !important;
+      line-height: 1.25 !important;
+      font-size: 12px !important;
+    }
+    #resultTableWrap td::before {
+      display: block !important;
+      content: attr(data-label) !important;
+      color: #8ea3ca !important;
+      font-size: 10px !important;
+      text-transform: uppercase !important;
+      letter-spacing: .055em !important;
+      margin-bottom: 5px !important;
+    }
+    #resultTableWrap td.stock-main {
+      grid-column: span 2;
+      background: rgba(64, 99, 255, .10) !important;
+      border-color: rgba(96, 165, 250, .18) !important;
+    }
+    #resultTableWrap td.actions-cell {
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      gap: 8px !important;
+    }
+    #resultTableWrap td.actions-cell::before {
+      width: 100%;
+      margin-bottom: 0 !important;
+    }
+    @media (max-width: 700px) {
+      #resultTableWrap tr {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+      #resultTableWrap td.stock-main {
+        grid-column: span 2;
+      }
+    }
+
+  
+
+    /* v1.18 — chỉ chỉnh giao diện màu sắc, giữ nguyên logic/code từ v1.14
+       Tone web chứng khoán Việt Nam:
+       nền #0B1017, đỏ=tăng, xanh lá=giảm, vàng=tham chiếu,
+       accent hành động/link/biểu đồ = #2172E5.
+    */
+    :root {
+      --bg: #0B1017 !important;
+      --panel: #121A25 !important;
+      --panel-2: #0F1722 !important;
+      --panel-3: #172231 !important;
+      --text: #F8FAFC !important;
+      --muted: #94A3B8 !important;
+      --line: rgba(148,163,184,.14) !important;
+
+      --vn-up: #FF4D5A;      /* HOSE/HNX: tăng giá */
+      --vn-down: #19C37D;    /* HOSE/HNX: giảm giá */
+      --vn-ref: #F5B83D;     /* tham chiếu / đứng giá */
+      --accent: #2172E5;     /* nút hành động / link / chart line */
+
+      --good: #19C37D !important;
+      --warn: #F5B83D !important;
+      --bad: #FF4D5A !important;
+      --info: #2172E5 !important;
+      --purple: #2172E5 !important;
+      --shadow: none !important;
+    }
+
+    html, body {
+      background: #0B1017 !important;
+      color: #F8FAFC !important;
+    }
+
+    body {
+      background: #0B1017 !important;
+      color: #F8FAFC !important;
+      min-height: 100vh;
+    }
+
+    body::before,
+    body::after {
+      content: none !important;
+      display: none !important;
+    }
+
+    .app {
+      max-width: 1600px;
+      padding: 16px 18px 28px !important;
+    }
+
+    .topbar,
+    .settings,
+    .panel,
+    .card,
+    .mini,
+    .quality-box,
+    .stage,
+    .table-wrap,
+    #resultTableWrap tr,
+    #resultTableWrap td,
+    .header-market {
+      box-shadow: none !important;
+    }
+
+    .topbar {
+      background: #0F1722 !important;
+      border: 1px solid rgba(148,163,184,.14) !important;
+      border-radius: 20px !important;
+      padding: 14px 16px !important;
+    }
+
+    .settings,
+    .panel,
+    .card,
+    .mini,
+    .quality-box,
+    .stage,
+    .table-wrap {
+      background: #121A25 !important;
+      border: 1px solid rgba(148,163,184,.14) !important;
+    }
+
+    .settings .panel-head {
+      background: #0F1722 !important;
+      border-color: rgba(148,163,184,.14) !important;
+    }
+
+    .settings .panel-body {
+      background: #121A25 !important;
+      border-color: rgba(148,163,184,.14) !important;
+    }
+
+    .header-search input,
+    .field input,
+    .field select,
+    .search input {
+      background: #0B1017 !important;
+      color: #F8FAFC !important;
+      border: 1px solid rgba(148,163,184,.14) !important;
+      box-shadow: none !important;
+    }
+
+    .brand-top h1,
+    .sidebar-brand-title,
+    .panel-title,
+    .section-title,
+    .metric,
+    .quality-box .v,
+    .stage .num,
+    .market-price,
+    .table-wrap td,
+    .table-wrap th,
+    #resultTableWrap td {
+      color: #F8FAFC !important;
+    }
+
+    .brand-top .subtitle,
+    .sidebar-brand-sub,
+    .subtitle,
+    .muted,
+    .muted-small,
+    .section-sub,
+    .label,
+    .submetric,
+    .status-line,
+    .footer-note,
+    .market-name,
+    .table-wrap td::before,
+    #resultTableWrap td::before,
+    .field label,
+    .note {
+      color: #94A3B8 !important;
+    }
+
+    .header-market {
+      width: max-content !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      background: #0B1017 !important;
+      border: 1px solid rgba(148,163,184,.14) !important;
+      overflow: hidden !important;
+    }
+
+    .market-line {
+      display: flex !important;
+      align-items: baseline !important;
+      gap: 9px !important;
+      white-space: nowrap !important;
+      flex-wrap: nowrap !important;
+    }
+
+    .market-dot {
+      background: var(--vn-down) !important;
+    }
+
+    .market-up,
+    .price-up,
+    .change-up,
+    .vn-up {
+      color: var(--vn-up) !important;
+      font-weight: 800 !important;
+    }
+
+    .price-down,
+    .change-down,
+    .vn-down {
+      color: var(--vn-down) !important;
+      font-weight: 800 !important;
+    }
+
+    .price-ref,
+    .change-flat,
+    .vn-ref {
+      color: var(--vn-ref) !important;
+      font-weight: 800 !important;
+    }
+
+    .market-sub {
+      color: var(--vn-down) !important;
+    }
+
+    .actions .btn,
+    .toolbar .btn,
+    .table-wrap .btn,
+    .btn.good,
+    .btn.warn,
+    .toggle.active {
+      background: rgba(33,114,229,.10) !important;
+      border: 1px solid rgba(33,114,229,.24) !important;
+      color: #DBEAFE !important;
+      box-shadow: none !important;
+    }
+
+    .actions .btn:hover,
+    .toolbar .btn:hover,
+    .table-wrap .btn:hover,
+    .btn.good:hover,
+    .btn.warn:hover,
+    .toggle.active:hover {
+      background: rgba(33,114,229,.16) !important;
+    }
+
+    .btn.primary,
+    #runBtn {
+      background: #2172E5 !important;
+      border-color: #2172E5 !important;
+      color: #F8FAFC !important;
+      box-shadow: none !important;
+    }
+
+    .btn.bad,
+    #cancelUpdateBtn {
+      background: rgba(255,77,90,.12) !important;
+      border-color: rgba(255,77,90,.22) !important;
+      color: #FFD5D9 !important;
+    }
+
+    a,
+    .accent-link {
+      color: #60A5FA !important;
+    }
+
+    .hint,
+    .result-hint {
+      background: rgba(33,114,229,.08) !important;
+      border-color: rgba(33,114,229,.18) !important;
+      color: #DBEAFE !important;
+    }
+
+    .quality-box.active,
+    .stage:hover,
+    .stage.active,
+    .clickable-card:hover,
+    .clickable-card.active,
+    .track-card:hover,
+    .track-card.active {
+      background: rgba(33,114,229,.08) !important;
+      border-color: rgba(33,114,229,.28) !important;
+      transform: none !important;
+    }
+
+    .pill {
+      background: rgba(148,163,184,.06) !important;
+      border: 1px solid rgba(148,163,184,.14) !important;
+      color: #CBD5E1 !important;
+    }
+
+    .pill.good {
+      background: rgba(25,195,125,.12) !important;
+      border-color: rgba(25,195,125,.18) !important;
+      color: #A7F3D0 !important;
+    }
+
+    .pill.bad {
+      background: rgba(255,77,90,.12) !important;
+      border-color: rgba(255,77,90,.18) !important;
+      color: #FECACA !important;
+    }
+
+    .pill.warn {
+      background: rgba(245,184,61,.12) !important;
+      border-color: rgba(245,184,61,.18) !important;
+      color: #FDE68A !important;
+    }
+
+    .pill.info,
+    .pill.purple {
+      background: rgba(33,114,229,.12) !important;
+      border-color: rgba(33,114,229,.20) !important;
+      color: #BFDBFE !important;
+    }
+
+    .table-wrap td,
+    .table-wrap th,
+    #resultTableWrap td {
+      border-color: rgba(148,163,184,.10) !important;
+    }
+
+    .table-wrap tr:hover td,
+    #resultTableWrap tr:hover td {
+      background: rgba(33,114,229,.06) !important;
+    }
+
+    #resultTableWrap tr {
+      background: #0F1722 !important;
+      border-color: rgba(148,163,184,.12) !important;
+    }
+
+    #resultTableWrap td {
+      background: #121A25 !important;
+    }
+
+    #resultTableWrap td.stock-main {
+      background: rgba(33,114,229,.08) !important;
+      border-color: rgba(33,114,229,.18) !important;
+    }
+
+    .modal {
+      background: #0F1722 !important;
+      border-color: rgba(148,163,184,.14) !important;
+      box-shadow: none !important;
+    }
+
+    .chartbox {
+      background: #0B1017 !important;
+      border-color: rgba(148,163,184,.14) !important;
+    }
+
+    .fact {
+      background: #121A25 !important;
+      border-color: rgba(148,163,184,.14) !important;
+    }
+  </style>
+
+<style id="alpha-v120-ux">
+  :root { --focus: rgba(96,165,250,.55); }
+  .brand-title-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.version-pill{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:rgba(96,165,250,.10);border:1px solid rgba(96,165,250,.22);color:#b9d7ff;font-size:10px;font-weight:800;letter-spacing:.06em}
+  .header-search{position:relative}.header-search input{padding-right:36px}.header-search-results{display:none;position:absolute;left:0;right:0;top:calc(100% + 7px);z-index:40;background:#101827;border:1px solid rgba(148,163,184,.18);border-radius:14px;box-shadow:0 18px 45px rgba(0,0,0,.35);padding:6px;max-height:320px;overflow:auto}.header-search-results.show{display:block}.header-search-item{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 10px;border:0;border-radius:10px;background:transparent;color:var(--text);text-align:left;cursor:pointer}.header-search-item:hover,.header-search-item.active{background:rgba(96,165,250,.11)}.header-search-item .ticker-hit{font-weight:900;letter-spacing:.03em}.header-search-item .meta-hit{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.header-search-empty{padding:10px;color:var(--muted);font-size:12px}
+  .market-change{font-weight:800;font-size:12px}.market-change.up{color:var(--good)}.market-change.down{color:var(--bad)}.market-change.flat{color:var(--muted)}.header-market.demo{outline:1px solid rgba(251,191,36,.16)}
+  .settings{max-height:calc(100vh - 36px);overflow:hidden}.settings .panel-body{overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}.settings-head{gap:8px}.settings-head-actions{display:flex;gap:6px}.icon-btn{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.025);color:var(--text);cursor:pointer;font-weight:900}.icon-btn:hover{background:rgba(96,165,250,.10);border-color:rgba(96,165,250,.28)}
+  .setting-group{position:relative}.setting-group>h3{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;user-select:none}.setting-group>h3::after{content:'−';display:grid;place-items:center;width:20px;height:20px;border-radius:6px;color:var(--muted);background:rgba(255,255,255,.025)}.setting-group.filter-collapsed>h3::after{content:'+'}.setting-group.filter-collapsed>:not(h3){display:none}
+  .result-toolbar-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.result-meta{font-size:11px;color:var(--muted);padding:5px 8px;border:1px solid rgba(148,163,184,.12);border-radius:999px;background:rgba(255,255,255,.018)}.result-search{position:relative}.result-search input{padding-right:34px}.search-clear{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);font-size:21px;line-height:1;cursor:pointer;padding:4px 7px;border-radius:7px}.search-clear:hover{background:rgba(255,255,255,.06);color:var(--text)}
+  #resultTableWrap thead th{position:sticky;top:0;z-index:2;background:#121a2b}.ticker-button{appearance:none;border:0;background:transparent;color:#cfe2ff;font:inherit;font-weight:900;padding:0;cursor:pointer}.ticker-button:hover{text-decoration:underline}
+  .quality-box{cursor:pointer}.quality-box.active{box-shadow:inset 0 0 0 1px rgba(96,165,250,.38),0 8px 24px rgba(0,0,0,.12)}
+  .help-backdrop{display:none}.help-modal{max-width:760px}.help-body{display:grid;gap:10px}.help-step{display:grid;grid-template-columns:170px 1fr;gap:14px;padding:13px;border:1px solid rgba(148,163,184,.12);border-radius:13px;background:rgba(255,255,255,.018)}.help-step span{color:var(--muted);line-height:1.55}.help-note{padding:12px 13px;border-radius:12px;background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.17);color:#cfe1ff}.help-body code{background:rgba(255,255,255,.06);padding:2px 5px;border-radius:5px}
+  :is(button,input,select,a):focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+  .data-source-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 7px;border:1px solid rgba(148,163,184,.14);border-radius:999px;font-size:10px;color:var(--muted)}
+  @media(max-width:1100px){.settings{max-height:none}.settings.mobile-collapsed .panel-body{display:none}.settings.mobile-collapsed{position:static}.settings .panel-body{overflow:visible}.settings-head{cursor:pointer}.topbar .actions{width:100%}.topbar .actions .btn{flex:1 1 calc(33.333% - 8px);text-align:center;justify-content:center}.help-step{grid-template-columns:1fr;gap:5px}}
+  @media(max-width:700px){.topbar{gap:10px!important}.brand-top .subtitle{font-size:11px;line-height:1.4}.header-search,.header-market{width:100%}.topbar .actions{display:grid!important;grid-template-columns:1fr 1fr;width:100%}.topbar .actions .btn{width:100%;min-height:39px}.topbar .actions #runBtn{grid-column:span 2}.settings-head-actions{margin-left:auto}.cards{gap:9px!important}.card{padding:13px!important}.quality-box{min-height:104px}.panel-body{padding:12px!important}.help-modal{width:calc(100vw - 20px);max-height:calc(100vh - 20px)}.help-step{padding:11px}.result-controls,.toolbar{gap:8px}.result-search{width:100%}.result-search input{width:100%}}
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand brand-top">
+        <img class="brand-logo-img top-logo" src="alpha-stock-logo.png" alt="Alpha Stock logo" />
+        <div>
+          <div class="brand-title-row"><h1>Alpha Stock</h1><span class="version-pill">v1.20 PRO</span></div>
+          <div class="subtitle">Bộ lọc kỹ thuật cổ phiếu Việt Nam — Data Quality → Thanh khoản → Trend → RS → Base → Breakout.</div>
+        </div>
+      </div>
+      <div class="header-search" id="headerSearchWrap">
+        <input id="headerSearchInput" type="search" autocomplete="off" placeholder="Tìm nhanh mã hoặc ngành…  (Ctrl + K)" aria-label="Tìm nhanh cổ phiếu" />
+        <div id="headerSearchResults" class="header-search-results" role="listbox" aria-label="Kết quả tìm nhanh"></div>
+      </div>
+      <div class="header-market" id="marketSnapshot" title="Được tính từ dữ liệu đang nạp, không phải giá realtime">
+        <div class="market-line"><span id="marketTicker" class="market-name">VNINDEX</span> <span class="market-dot"></span> <span id="marketPrice" class="market-price">—</span> <span id="marketChange" class="market-change">—</span></div>
+        <div id="marketSub" class="market-sub">Chưa có dữ liệu chỉ số</div>
+      </div>
+      <div class="actions">
+        <label class="btn" for="csvInput" title="Chọn CSV do Alpha Stock exporter tạo">Nhập dữ liệu CSV</label>
+        <input id="csvInput" type="file" accept=".csv,text/csv,.txt" />
+        <button id="loadDemoBtn" class="btn good" title="Nạp dữ liệu giả lập để thử giao diện">Dùng demo</button>
+        <button id="updateFreeDataBtn" class="btn warn" title="Tải dữ liệu trực tiếp từ nguồn public; có thể bị CORS/rate-limit">Cập nhật online</button>
+        <button id="cancelUpdateBtn" class="btn bad" style="display:none;">Dừng cập nhật</button>
+        <button id="runBtn" class="btn primary">Chạy bộ lọc</button>
+        <button id="quickHelpBtn" class="btn ghost" type="button">Hướng dẫn</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <aside class="panel settings">
+        <div class="sidebar-shell">
+          <div class="sidebar-brand">
+            <img class="brand-logo-img side-logo" src="alpha-stock-logo.png" alt="Alpha Stock logo" />
+            <div>
+              <div class="sidebar-brand-title">Alpha Stock</div>
+              <div class="sidebar-brand-sub">Bộ lọc kỹ thuật cổ phiếu</div>
+            </div>
+          </div>
+        </div>
+        <div class="panel-head settings-head">
+          <div>
+            <div class="panel-title">Cấu hình bộ lọc</div>
+            <div id="settingsSavedState" class="muted-small">Tự lưu trên trình duyệt</div>
+          </div>
+          <div class="settings-head-actions">
+            <button id="resetSettingsBtn" class="icon-btn" type="button" title="Khôi phục cấu hình mặc định v1.19">↺</button>
+            <button id="toggleSettingsPanelBtn" class="icon-btn" type="button" title="Thu gọn/mở cấu hình" aria-expanded="true">⌃</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="setting-group">
+            <h3>0. Data Quality Gate</h3>
+            <div class="hint">Chọn nhóm ngày dữ liệu bằng các ô trong bảng <b>Data Quality Gate</b>: Sau ngày chuẩn, D0, D-1, D-2 đến D-5, Trễ &gt; 5 phiên hoặc Thiếu lịch sử. Pipeline sẽ tự lọc theo nhóm đang chọn.</div>
+            <div class="muted-small">Nhóm đang chọn: <b id="activeQualityLabel">Ngày chuẩn / D0</b></div>
+          </div>
+
+          <div class="setting-group">
+            <h3>1. Thanh khoản</h3>
+            <div class="field"><label>GTGD TB 20 phiên tối thiểu, đơn vị tỷ VND</label><input id="minValueB" type="number" min="0" step="0.1" value="3" /></div>
+            <div class="field"><label>Volume TB 20 phiên tối thiểu</label><input id="minVol" type="number" min="0" step="10000" value="100000" /></div>
+            <div class="field"><label>Giá tối thiểu, VND/cp</label><input id="minPrice" type="number" min="0" step="500" value="5000" /></div>
+            <div class="field"><label>Tỷ lệ phiên có giao dịch trong 60 phiên</label><div class="hint" style="padding:9px 10px; text-align:center;"><b>Cố định 100%</b><br><span class="muted-small">60/60 phiên</span></div></div>
+          </div>
+
+          <div class="setting-group">
+            <h3>2. Trend / Stage 2</h3>
+            <div class="field"><label>Giá cách đỉnh 52 tuần tối đa</label><input id="maxHighGap" type="number" min="0" max="0.8" step="0.01" value="0.25" /></div>
+            <div class="field"><label>Giá cao hơn đáy 52 tuần tối thiểu</label><input id="minLowLift" type="number" min="0" max="3" step="0.05" value="0.30" /></div>
+            <div class="field"><label>Số ngày tính độ dốc MA200</label><input id="slopeDays" type="number" min="5" step="5" value="20" /></div>
+          </div>
+
+          <div class="setting-group">
+            <h3>3. Relative Strength</h3>
+            <div class="field"><label>Ngưỡng Leader Track, RS percentile</label><input id="leaderRS" type="number" min="0" max="100" step="1" value="70" /></div>
+            <div class="field"><label>Ngưỡng Early Watch, RS percentile</label><input id="earlyRS" type="number" min="0" max="100" step="1" value="45" /></div>
+            <div class="field"><label>Mã chỉ số so sánh</label><input id="benchmarkTicker" type="text" value="VNINDEX" /></div>
+          </div>
+
+          <div class="setting-group">
+            <h3>4. Base / Breakout</h3>
+            <div class="field"><label>Số phiên tìm nền giá</label><input id="baseDays" type="number" min="30" max="120" step="5" value="60" /></div>
+            <div class="field"><label>Khoảng cách tới pivot để coi là gần</label><input id="nearPivotPct" type="number" min="0" max="0.2" step="0.01" value="0.05" /></div>
+            <div class="field"><label>Volume breakout / Volume TB 50</label><input id="breakVolMultiple" type="number" min="1" max="5" step="0.1" value="1.5" /></div>
+          </div>
+
+          <div class="setting-group">
+            <h3>5. Cập nhật online thử nghiệm</h3>
+            <div class="field"><label>Nguồn miễn phí</label><select id="dataProvider"><option value="vndirect">VNDIRECT public API</option></select></div>
+            <div class="field"><label>Số phiên lịch sử cần tải</label><input id="historySessions" type="number" min="220" max="900" step="10" value="320" /></div>
+            <div class="field"><label>Giới hạn số mã/lần, 0 = toàn bộ</label><input id="maxTickers" type="number" min="0" step="50" value="0" /></div>
+            <div class="field"><label>Số luồng tải song song</label><input id="fetchConcurrency" type="number" min="1" max="8" step="1" value="4" /></div>
+          </div>
+
+          <div class="hint">
+            CSV chuẩn nên có cột: <b>ticker, exchange, sector, date, open, high, low, close, volume</b>. Nên tạo CSV bằng công cụ trong thư mục <b>tools</b>, sau đó import vào web. Ứng dụng chạy hoàn toàn trên trình duyệt, không gửi dữ liệu ra ngoài.
+          </div>
+          <div id="dataStatus" class="footer-note">Đang khởi tạo. Dữ liệu demo sẽ được nạp để bạn kiểm tra giao diện; hãy nhập CSV khi phân tích thực tế.</div>
+          <div id="updateProgressWrap" class="progress-wrap"><div id="updateProgressBar" class="progress-bar"></div></div>
+          <div class="source-note">CSV Import là nguồn chính. Cập nhật online chỉ là thử nghiệm vì nguồn miễn phí có thể trễ, cache hoặc bị chặn CORS.</div>
+        </div>
+      </aside>
+
+      <main>
+        <section class="cards">
+          <div class="card">
+            <div class="label">Universe CSV</div>
+            <div id="universeCount" class="metric">0</div>
+            <div class="submetric">Tổng mã/chỉ số trong dữ liệu nhập</div>
+          </div>
+          <div class="card">
+            <div class="label">Nhóm ngày đang chọn</div>
+            <div id="qualityValidCount" class="metric">0</div>
+            <div id="activeQualitySubmetric" class="submetric">Ngày chuẩn / D0</div>
+          </div>
+          <div class="card">
+            <div class="label">Không vào pipeline hiện tại</div>
+            <div id="qualityExcludedCount" class="metric">0</div>
+            <div class="submetric">Khác nhóm ngày đang chọn / mã không hợp lệ</div>
+          </div>
+          <div class="card clickable-card" data-stage-card="leader">
+            <div class="label">Leader Track</div>
+            <div id="leaderCount" class="metric">0</div>
+            <div class="submetric">RS đạt, trend tốt</div>
+          </div>
+          <div class="card clickable-card" data-stage-card="early">
+            <div class="label">Early Watch</div>
+            <div id="earlyCount" class="metric">0</div>
+            <div class="submetric">RS chưa đạt nhưng có thể cải thiện</div>
+          </div>
+        </section>
+<section class="panel" id="qualityPanel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Data Quality Gate</div>
+              <div class="status-line">Kiểm tra ngày dữ liệu từng mã trước khi đưa vào bộ lọc. Không dùng mã stale trong pipeline chính.</div>
+            </div>
+            <button id="exportStaleBtn" class="btn small">Xuất stale_tickers.csv</button>
+          </div>
+          <div class="panel-body">
+            <div id="qualitySummary" class="quality-grid"></div>
+            <div id="qualityNotes" class="quality-notes"></div>
+            <div id="qualityTableWrap"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Pipeline lọc kỹ thuật</div>
+              <div class="status-line">Bấm vào từng vòng để xem danh sách mã còn lại sau vòng đó.</div>
+            </div>
+            <button id="exportBtn" class="btn small">Xuất CSV kết quả</button>
+          </div>
+          <div class="panel-body">
+            <div id="pipeline" class="pipeline"></div>
+
+            <div class="split">
+              <div class="mini track-card" data-stage-card="leader">
+                <h3>Leader Track</h3>
+                <p>Nhấn để hiện nhóm cổ phiếu đã mạnh hơn thị trường, phù hợp hơn với tư duy “mua cổ phiếu dẫn dắt khi setup đẹp”.</p>
+              </div>
+              <div class="mini track-card" data-stage-card="early">
+                <h3>Early Watch Track</h3>
+                <p>Nhấn để hiện nhóm chưa đủ RS mạnh nhưng trend không xấu và có dấu hiệu cải thiện. Dùng để quan sát sớm.</p>
+              </div>
+            </div>
+
+            <div id="resultHint" class="result-hint">Danh sách cổ phiếu đang được ẩn. Nhấn vào <b>Leader Track</b>, <b>Early Watch Track</b> hoặc một vòng trong pipeline để xem danh sách tương ứng.</div>
+
+            <div id="resultControls" class="toolbar is-hidden">
+              <div class="result-toolbar-left">
+                <div id="tabs" class="tabs"></div>
+                <div id="resultMeta" class="result-meta"></div>
+              </div>
+              <div class="search result-search"><input id="searchInput" type="search" placeholder="Tìm trong kết quả…" aria-label="Tìm trong kết quả" /><button id="clearResultSearchBtn" class="search-clear" type="button" title="Xóa tìm kiếm">×</button></div>
+            </div>
+
+            <div id="resultTableWrap" class="table-wrap is-hidden">
+              <table>
+                <thead>
+                  <tr>
+                    <th data-sort="ticker">Mã</th>
+                    <th data-sort="exchange">Sàn</th>
+                    <th data-sort="sector">Ngành</th>
+                    <th data-sort="date">Ngày</th>
+                    <th data-sort="staleSessions">Data</th>
+                    <th data-sort="close">Giá</th>
+                    <th data-sort="avgValue20B">GTGD TB20</th>
+                    <th data-sort="trendStage">Trend</th>
+                    <th data-sort="highGapPct">Cách đỉnh 52W</th>
+                    <th data-sort="rsPercentile">RS</th>
+                    <th data-sort="rs3m">RS 3M</th>
+                    <th data-sort="rs6m">RS 6M</th>
+                    <th data-sort="rsTrend">RS Trend</th>
+                    <th data-sort="baseStatus">Base</th>
+                    <th data-sort="breakoutStatus">Breakout</th>
+                    <th data-sort="riskPct">Risk</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="resultBody"></tbody>
+              </table>
+              <div id="emptyState" class="empty" style="display:none;">Không có mã phù hợp với bộ lọc hiện tại.</div>
+            </div>
+            <div class="footer-note">
+              Bản MVP này ưu tiên lọc kỹ thuật. Dữ liệu thật lấy từ nguồn public miễn phí nên có thể chậm, thiếu hoặc bị giới hạn. Fundamental Snapshot được để ở giai đoạn sau, khi một mã đã được đưa vào watchlist.
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h2 id="modalTitle" style="margin:0;">Chi tiết mã</h2>
+          <div id="modalSubtitle" class="subtitle"></div>
+        </div>
+        <div class="actions">
+          <button id="modalWatchBtn" class="btn good small">Thêm Watchlist</button>
+          <button id="closeModalBtn" class="btn small">Đóng</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="detail-grid">
+          <div class="chartbox"><canvas id="priceCanvas" width="900" height="360"></canvas></div>
+          <div>
+            <div id="detailFacts" class="facts"></div>
+            <div class="footer-note">
+              Risk plan chỉ là tính toán kỹ thuật từ pivot/stop giả định. Người dùng tự chịu trách nhiệm khi ra quyết định.
+            </div>
+          </div>
+        </div>
+        <div id="detailNotes" class="mini" style="margin-top:14px;"></div>
+      </div>
+    </div>
+  </div>
+  <div id="helpBackdrop" class="modal-backdrop help-backdrop" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="modal help-modal">
+      <div class="modal-head">
+        <div>
+          <h2 id="helpTitle" style="margin:0;">Sử dụng Alpha Stock trong 5 bước</h2>
+          <div class="subtitle">Nguyên lý vẫn giữ nguyên như v1.19; phần này chỉ giúp thao tác nhanh và ít nhầm hơn.</div>
+        </div>
+        <button id="closeHelpBtn" class="btn small">Đóng</button>
+      </div>
+      <div class="modal-body help-body">
+        <div class="help-step"><b>1. Chuẩn bị dữ liệu</b><span>Khuyến nghị chạy file exporter trong thư mục <code>tools</code>, sau đó nhập CSV vừa tạo. Dữ liệu demo chỉ để thử giao diện.</span></div>
+        <div class="help-step"><b>2. Chọn Data Quality Gate</b><span>Ưu tiên <b>Ngày chuẩn / D0</b>. Các nhóm D-1, D-2… dùng để kiểm tra dữ liệu cũ, không nên dùng xác nhận breakout mới.</span></div>
+        <div class="help-step"><b>3. Chỉnh ngưỡng nếu cần</b><span>Mặc định v1.19 được giữ lại. Các thay đổi được tự lưu trên trình duyệt; nút ↺ đưa toàn bộ về mặc định.</span></div>
+        <div class="help-step"><b>4. Chọn một vòng pipeline</b><span>Bấm Thanh khoản, Trend, Leader, Early, Base hoặc Gần Breakout để hiện danh sách cổ phiếu còn lại sau vòng đó.</span></div>
+        <div class="help-step"><b>5. Mở Chi tiết và tạo Watchlist</b><span>Kiểm tra chart, pivot, stop kỹ thuật, risk và lưu các mã cần theo dõi. Alpha Stock là công cụ sàng lọc, không phải khuyến nghị mua bán.</span></div>
+        <div class="help-note"><b>Mẹo:</b> Ctrl+K để tìm mã nhanh. Trên điện thoại, phần Cấu hình bộ lọc mặc định được thu gọn để bạn vào kết quả nhanh hơn.</div>
+        <a class="btn" href="huong_dan_su_dung_alpha_stock.pdf" target="_blank" rel="noopener">Mở HDSD PDF hiện có</a>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    "use strict";
+    // Alpha Stock v1.20 PRO UX hardening layer. Screening formulas/pipeline remain compatible with v1.19.
+
+    function readWatchlistStorage() {
+      try { return JSON.parse(localStorage.getItem("alphaStockWatchlist") || "[]"); }
+      catch (_) { return []; }
+    }
+    function writeWatchlistStorage(items) {
+      try { localStorage.setItem("alphaStockWatchlist", JSON.stringify(items)); }
+      catch (_) { /* Một số môi trường preview có thể chặn localStorage. */ }
+    }
+
+    function emptyQuality() {
+      return {
+        standardDate: "—", method: "—", ageDays: NaN, totalTickers: 0,
+        activeTickers: new Set(), byTicker: new Map(),
+        counts: { d0:0, d1:0, d2to5:0, stale:0, future:0, tooShort:0, invalid:0 },
+        groups: { future: [], d0: [], d1: [], d2to5: [], stale: [], tooShort: [], invalid: [], excluded: [] },
+        samples: []
+      };
+    }
+
+    const state = {
+      rawRows: [],
+      filteredRows: [],
+      fullSeries: new Map(),
+      series: new Map(),
+      quality: emptyQuality(),
+      metrics: [],
+      stages: {},
+      currentStage: null,
+      currentTab: "all",
+      qualityView: null,
+      qualityListVisible: false,
+      activeQualityGroup: "d0",
+      sortKey: "rsPercentile",
+      sortDir: "desc",
+      watchlist: new Set(readWatchlistStorage()),
+      selectedTicker: null,
+      isUpdating: false,
+      updateAbortController: null,
+      lastDataSource: "Demo",
+      importDiagnostics: null,
+      headerSearchIndex: -1,
+      headerSearchResults: []
+    };
+
+    const stageMeta = [
+      ["liquidity", "Thanh khoản", "Đủ điều kiện giao dịch"],
+      ["trend", "Trend / Stage 2", "Xu hướng tăng hoặc mới cải thiện"],
+      ["leader", "Leader Track", "RS đạt chuẩn"],
+      ["early", "Early Watch", "RS chưa đạt nhưng cải thiện"],
+      ["base", "Base / VCP", "Có nền giá đáng chú ý"],
+      ["breakout", "Gần Breakout", "Gần/vượt pivot"],
+      ["watchlist", "Watchlist", "Mã bạn tự lưu"]
+    ];
+
+    const $ = (id) => document.getElementById(id);
+
+
+    const FILTER_SETTING_IDS = [
+      "minValueB","minVol","minPrice","maxHighGap","minLowLift","slopeDays",
+      "leaderRS","earlyRS","benchmarkTicker","baseDays","nearPivotPct","breakVolMultiple",
+      "dataProvider","historySessions","maxTickers","fetchConcurrency"
+    ];
+    const FILTER_DEFAULTS = Object.freeze({
+      minValueB:"3", minVol:"100000", minPrice:"5000", maxHighGap:"0.25", minLowLift:"0.30",
+      slopeDays:"20", leaderRS:"70", earlyRS:"45", benchmarkTicker:"VNINDEX", baseDays:"60",
+      nearPivotPct:"0.05", breakVolMultiple:"1.5", dataProvider:"vndirect", historySessions:"320",
+      maxTickers:"0", fetchConcurrency:"4"
+    });
+    const SETTINGS_STORAGE_KEY = "alphaStockSettingsV120";
+
+    function safeJsonParse(text, fallback = null) {
+      try { return JSON.parse(text); } catch (_) { return fallback; }
+    }
+    function loadSavedSettings() {
+      let stored = {};
+      try { stored = safeJsonParse(localStorage.getItem(SETTINGS_STORAGE_KEY) || "{}", {}) || {}; } catch (_) { stored = {}; }
+      FILTER_SETTING_IDS.forEach(id => {
+        const el = $(id);
+        if (!el) return;
+        const value = stored[id] ?? FILTER_DEFAULTS[id];
+        if (value !== undefined && value !== null) el.value = String(value);
+      });
+      updateSettingsSavedState("Đã nạp cấu hình đã lưu");
+    }
+    function saveSettings() {
+      const payload = {};
+      FILTER_SETTING_IDS.forEach(id => { const el = $(id); if (el) payload[id] = el.value; });
+      try { localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(payload)); } catch (_) {}
+      updateSettingsSavedState("Đã tự lưu cấu hình");
+    }
+    function resetSettingsToDefaults() {
+      FILTER_SETTING_IDS.forEach(id => { const el = $(id); if (el && FILTER_DEFAULTS[id] !== undefined) el.value = FILTER_DEFAULTS[id]; });
+      saveSettings();
+      if (state.rawRows.length) runScreener();
+      toast("Đã khôi phục cấu hình mặc định của v1.19.");
+    }
+    function updateSettingsSavedState(text) {
+      const el = $("settingsSavedState");
+      if (!el) return;
+      el.textContent = text;
+      clearTimeout(updateSettingsSavedState._t);
+      updateSettingsSavedState._t = setTimeout(() => { if (el) el.textContent = "Tự lưu trên trình duyệt"; }, 1800);
+    }
+
+    function normalizeDateString(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      const iso = raw.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[ T].*)?$/);
+      if (iso) return `${iso[1]}-${String(iso[2]).padStart(2,"0")}-${String(iso[3]).padStart(2,"0")}`;
+      const dmy = raw.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})(?:[ T].*)?$/);
+      if (dmy) return `${dmy[3]}-${String(dmy[2]).padStart(2,"0")}-${String(dmy[1]).padStart(2,"0")}`;
+      return raw.slice(0,10);
+    }
+
+    function detectCsvDelimiter(text) {
+      const first = String(text || "").replace(/^\uFEFF/, "").split(/\r?\n/).find(line => line.trim()) || "";
+      const candidates = [",", ";", "\t"];
+      let best = ",", bestCount = -1;
+      for (const d of candidates) {
+        let quote = false, count = 0;
+        for (let i=0; i<first.length; i++) {
+          if (first[i] === '"') quote = !quote;
+          else if (!quote && first[i] === d) count++;
+        }
+        if (count > bestCount) { bestCount = count; best = d; }
+      }
+      return best;
+    }
+
+    function renderMarketSnapshot() {
+      const ticker = settings().benchmarkTicker || "VNINDEX";
+      const source = state.fullSeries?.get(ticker) || state.fullSeries?.get("VNINDEX") || state.series?.get(ticker) || [];
+      const rows = Array.isArray(source) ? source.filter(r => Number.isFinite(r.close)) : [];
+      const priceEl = $("marketPrice"), changeEl = $("marketChange"), subEl = $("marketSub"), tickerEl = $("marketTicker"), box = $("marketSnapshot");
+      if (!priceEl || !changeEl || !subEl || !tickerEl) return;
+      tickerEl.textContent = ticker;
+      changeEl.className = "market-change flat";
+      box?.classList.toggle("demo", state.lastDataSource === "Demo");
+      if (!rows.length) {
+        priceEl.textContent = "—"; changeEl.textContent = "—"; subEl.textContent = "Không có chỉ số trong dữ liệu"; return;
+      }
+      const last = rows[rows.length-1], prev = rows.length > 1 ? rows[rows.length-2] : null;
+      priceEl.textContent = fmtNum(last.close, 2);
+      if (prev && Number.isFinite(prev.close) && prev.close !== 0) {
+        const delta = last.close - prev.close, pct = delta / prev.close;
+        const sign = delta > 0 ? "+" : "";
+        changeEl.textContent = `${sign}${fmtNum(delta,2)} (${sign}${fmtPct(pct,2)})`;
+        changeEl.className = `market-change ${delta > 0 ? "up" : delta < 0 ? "down" : "flat"}`;
+      } else changeEl.textContent = "—";
+      subEl.textContent = `${state.lastDataSource === "Demo" ? "Dữ liệu demo" : "Theo dữ liệu đã nạp"} • ${last.date || "—"}`;
+    }
+
+    function headerSearchCandidates(query) {
+      const q = String(query || "").trim().toLowerCase();
+      if (!q) return [];
+      const source = state.metrics?.length ? state.metrics : [];
+      return source.filter(x => [x.ticker, x.exchange, x.sector].join(" ").toLowerCase().includes(q))
+        .sort((a,b) => {
+          const ae = a.ticker.toLowerCase() === q ? -2 : a.ticker.toLowerCase().startsWith(q) ? -1 : 0;
+          const be = b.ticker.toLowerCase() === q ? -2 : b.ticker.toLowerCase().startsWith(q) ? -1 : 0;
+          return ae - be || b.rsPercentile - a.rsPercentile || a.ticker.localeCompare(b.ticker);
+        }).slice(0,8);
+    }
+    function closeHeaderSearchDropdown() {
+      const wrap = $("headerSearchResults"); if (wrap) { wrap.classList.remove("show"); wrap.innerHTML = ""; }
+      state.headerSearchResults = []; state.headerSearchIndex = -1;
+    }
+    function renderHeaderSearchDropdown(value) {
+      const wrap = $("headerSearchResults"); if (!wrap) return;
+      const rows = headerSearchCandidates(value); state.headerSearchResults = rows; state.headerSearchIndex = rows.length ? 0 : -1;
+      if (!String(value || "").trim()) { closeHeaderSearchDropdown(); return; }
+      wrap.innerHTML = rows.length ? rows.map((x,i) => `<button type="button" class="header-search-item ${i===0?"active":""}" data-header-hit="${escapeHtml(x.ticker)}"><span><span class="ticker-hit">${escapeHtml(x.ticker)}</span> <span class="meta-hit">${escapeHtml(x.exchange)}</span></span><span class="meta-hit">${escapeHtml(x.sector || "—")} • RS ${escapeHtml(x.rsPercentile)}</span></button>`).join("") : `<div class="header-search-empty">Không tìm thấy mã/ngành trong dữ liệu đang nạp.</div>`;
+      wrap.classList.add("show");
+      wrap.querySelectorAll("[data-header-hit]").forEach(btn => btn.addEventListener("click", () => { openDetail(btn.dataset.headerHit); closeHeaderSearchDropdown(); }));
+    }
+    function refreshHeaderSearchActive() {
+      const wrap = $("headerSearchResults"); if (!wrap) return;
+      [...wrap.querySelectorAll(".header-search-item")].forEach((el,i) => el.classList.toggle("active", i===state.headerSearchIndex));
+    }
+
+    function updateResultMeta(count = null) {
+      const el = $("resultMeta"); if (!el) return;
+      if (!state.currentStage) { el.textContent = ""; return; }
+      const meta = stageMeta.find(([key]) => key === state.currentStage);
+      const n = count ?? visibleRows().length;
+      const arrow = state.sortDir === "asc" ? "↑" : "↓";
+      el.textContent = `${meta?.[1] || state.currentStage} • ${n.toLocaleString("vi-VN")} mã • sắp xếp ${state.sortKey} ${arrow}`;
+    }
+
+    function setSettingsPanelCollapsed(collapsed) {
+      const panel = document.querySelector(".settings"), btn = $("toggleSettingsPanelBtn"); if (!panel || !btn) return;
+      panel.classList.toggle("mobile-collapsed", collapsed);
+      btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      btn.textContent = collapsed ? "⌄" : "⌃";
+    }
+    function initFilterSectionCollapsing() {
+      document.querySelectorAll(".settings .setting-group").forEach((group, idx) => {
+        const h = group.querySelector(":scope > h3"); if (!h) return;
+        h.setAttribute("role", "button"); h.setAttribute("tabindex", "0"); h.setAttribute("aria-expanded", "true");
+        const toggle = () => { const collapsed = group.classList.toggle("filter-collapsed"); h.setAttribute("aria-expanded", collapsed ? "false" : "true"); };
+        h.addEventListener("click", toggle); h.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }});
+        if (window.matchMedia("(max-width:700px)").matches && idx >= 2) { group.classList.add("filter-collapsed"); h.setAttribute("aria-expanded","false"); }
+      });
+    }
+    function openHelp() { $("helpBackdrop").style.display = "flex"; }
+    function closeHelp() { $("helpBackdrop").style.display = "none"; }
+    function initUxEnhancements() {
+      initFilterSectionCollapsing();
+      const small = window.matchMedia("(max-width:1100px)").matches;
+      setSettingsPanelCollapsed(small);
+      $("toggleSettingsPanelBtn")?.addEventListener("click", () => setSettingsPanelCollapsed(!document.querySelector(".settings")?.classList.contains("mobile-collapsed")));
+      $("resetSettingsBtn")?.addEventListener("click", resetSettingsToDefaults);
+      $("quickHelpBtn")?.addEventListener("click", openHelp); $("closeHelpBtn")?.addEventListener("click", closeHelp);
+      $("helpBackdrop")?.addEventListener("click", e => { if (e.target.id === "helpBackdrop") closeHelp(); });
+      $("clearResultSearchBtn")?.addEventListener("click", () => { $("searchInput").value = ""; renderTable(); $("searchInput").focus(); });
+      const hs = $("headerSearchInput");
+      hs?.addEventListener("input", e => renderHeaderSearchDropdown(e.target.value));
+      hs?.addEventListener("keydown", e => {
+        const rows = state.headerSearchResults || [];
+        if (e.key === "ArrowDown" && rows.length) { e.preventDefault(); state.headerSearchIndex = Math.min(state.headerSearchIndex + 1, rows.length - 1); refreshHeaderSearchActive(); }
+        else if (e.key === "ArrowUp" && rows.length) { e.preventDefault(); state.headerSearchIndex = Math.max(state.headerSearchIndex - 1, 0); refreshHeaderSearchActive(); }
+        else if (e.key === "Enter" && rows.length) { e.preventDefault(); const row = rows[Math.max(0,state.headerSearchIndex)] || rows[0]; openDetail(row.ticker); closeHeaderSearchDropdown(); }
+        else if (e.key === "Escape") closeHeaderSearchDropdown();
+      });
+      document.addEventListener("click", e => { const wrap = $("headerSearchWrap"); if (wrap && !wrap.contains(e.target)) closeHeaderSearchDropdown(); });
+      document.addEventListener("keydown", e => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); hs?.focus(); hs?.select(); }
+        if (e.key === "Escape") { if ($("modalBackdrop")?.style.display === "flex") $("modalBackdrop").style.display = "none"; if ($("helpBackdrop")?.style.display === "flex") closeHelp(); }
+      });
+    }
+
+    function isPlainStockTicker(ticker) {
+      return /^[A-Z0-9]{3}$/.test(String(ticker || "").trim().toUpperCase());
+    }
+
+    function isBenchmarkOrIndexTicker(ticker) {
+      const t = String(ticker || "").trim().toUpperCase();
+      const cfgTicker = ($("benchmarkTicker")?.value || "VNINDEX").trim().toUpperCase();
+      return t === cfgTicker || ["VNINDEX", "VN30", "HNXINDEX", "UPCOMINDEX"].includes(t) || t.endsWith("INDEX");
+    }
+
+    function qualityGroupLabel(key) {
+      return ({
+        future: "Sau ngày chuẩn",
+        d0: "Ngày chuẩn / D0",
+        d1: "D-1",
+        d2to5: "D-2 đến D-5",
+        stale: "Trễ > 5 phiên",
+        tooShort: "Thiếu lịch sử",
+        invalid: "Mã không hợp lệ"
+      })[key] || "Ngày chuẩn / D0";
+    }
+
+    function settings() {
+      return {
+        minValueB: Number($("minValueB").value),
+        minVol: Number($("minVol").value),
+        minPrice: Number($("minPrice").value),
+        minActiveRatio: 1,
+        maxHighGap: Number($("maxHighGap").value),
+        minLowLift: Number($("minLowLift").value),
+        slopeDays: Number($("slopeDays").value),
+        leaderRS: Number($("leaderRS").value),
+        earlyRS: Number($("earlyRS").value),
+        benchmarkTicker: $("benchmarkTicker").value.trim().toUpperCase() || "VNINDEX",
+        baseDays: Number($("baseDays").value),
+        nearPivotPct: Number($("nearPivotPct").value),
+        breakVolMultiple: Number($("breakVolMultiple").value)
+      };
+    }
+
+    function updateSettings() {
+      return {
+        provider: $("dataProvider").value,
+        historySessions: Math.max(220, Number($("historySessions").value) || 320),
+        maxTickers: Math.max(0, Number($("maxTickers").value) || 0),
+        fetchConcurrency: Math.min(8, Math.max(1, Number($("fetchConcurrency").value) || 4))
+      };
+    }
+
+    function fmtNum(n, digits = 1) {
+      if (!Number.isFinite(n)) return "—";
+      return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(n);
+    }
+    function fmtPrice(n) {
+      if (!Number.isFinite(n)) return "—";
+      return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(n);
+    }
+    function fmtPct(n, digits = 1) {
+      if (!Number.isFinite(n)) return "—";
+      return `${fmtNum(n * 100, digits)}%`;
+    }
+    function pill(text, tone = "") { return `<span class="pill ${tone}">${escapeHtml(text)}</span>`; }
+    function escapeHtml(str) {
+      return String(str ?? "").replace(/[&<>'"]/g, (ch) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#039;","\"":"&quot;"}[ch]));
+    }
+
+    function parseCsv(text) {
+      const rawText = String(text || "").replace(/^\uFEFF/, "");
+      const delimiter = detectCsvDelimiter(rawText);
+      const rows = [];
+      let row = [], cell = "", quote = false;
+      for (let i = 0; i < rawText.length; i++) {
+        const c = rawText[i], next = rawText[i + 1];
+        if (c === '"') {
+          if (quote && next === '"') { cell += '"'; i++; }
+          else quote = !quote;
+        } else if (c === delimiter && !quote) { row.push(cell); cell = ""; }
+        else if ((c === "\n" || c === "\r") && !quote) {
+          if (c === "\r" && next === "\n") i++;
+          row.push(cell); cell = "";
+          if (row.some(v => v.trim() !== "")) rows.push(row);
+          row = [];
+        } else cell += c;
+      }
+      row.push(cell);
+      if (row.some(v => v.trim() !== "")) rows.push(row);
+      if (rows.length < 2) { state.importDiagnostics = { delimiter, inputRows:0, validRows:0, skippedRows:0, headers:[] }; return []; }
+      const headers = rows[0].map(h => h.replace(/^\uFEFF/, "").trim().toLowerCase());
+      const normalized = [];
+      let skipped = 0;
+      for (const r of rows.slice(1)) {
+        const obj = {};
+        headers.forEach((h, idx) => obj[h] = (r[idx] ?? "").trim());
+        const n = normalizeRow(obj);
+        if (n) normalized.push(n); else skipped++;
+      }
+      state.importDiagnostics = { delimiter, inputRows: rows.length - 1, validRows: normalized.length, skippedRows: skipped, headers };
+      return normalized;
+    }
+
+    function normalizeRow(obj) {
+      const ticker = String(obj.ticker || obj.symbol || obj.code || obj.ma || "").trim().toUpperCase();
+      const date = normalizeDateString(obj.date || obj.time || obj.tradingdate || obj.ngay || "");
+      if (!ticker || !date) return null;
+      let open = cleanNumber(obj.open || obj.gia_mo_cua || obj.o);
+      let high = cleanNumber(obj.high || obj.gia_cao_nhat || obj.h);
+      let low = cleanNumber(obj.low || obj.gia_thap_nhat || obj.l);
+      let close = cleanNumber(obj.close || obj.gia_dong_cua || obj.c || obj.price);
+      const volume = cleanNumber(obj.volume || obj.vol || obj.khoi_luong);
+      if (![open, high, low, close, volume].every(Number.isFinite)) return null;
+
+      // Một số nguồn dữ liệu Việt Nam, đặc biệt khi xuất từ vnstock/VCI,
+      // trả giá theo đơn vị nghìn đồng: FPT = 118 thay vì 118000.
+      // Nếu không chuẩn hóa, GTGD TB20 sẽ bị thấp hơn 1000 lần và mọi mã sẽ rớt thanh khoản.
+      const priceScale = close > 0 && close < 1000 ? 1000 : 1;
+      if (priceScale !== 1) {
+        open *= priceScale;
+        high *= priceScale;
+        low *= priceScale;
+        close *= priceScale;
+      }
+
+      return {
+        ticker,
+        exchange: String(obj.exchange || obj.floor || obj.san || "UNKNOWN").trim().toUpperCase(),
+        sector: String(obj.sector || obj.industry || obj.nganh || "Chưa phân loại").trim(),
+        date: normalizeDate(date),
+        open, high, low, close, volume
+      };
+    }
+
+    function cleanNumber(v) {
+      if (typeof v === "number") return v;
+      const s = String(v ?? "").replace(/\s/g, "").replace(/,/g, "");
+      if (!s) return NaN;
+      return Number(s);
+    }
+
+    function normalizeDate(s) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (m) return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+      return s.slice(0, 10);
+    }
+
+    function buildSeries(rows) {
+      const map = new Map();
+      for (const r of rows) {
+        if (!map.has(r.ticker)) map.set(r.ticker, []);
+        map.get(r.ticker).push(r);
+      }
+      for (const arr of map.values()) {
+        arr.sort((a,b) => a.date.localeCompare(b.date));
+      }
+      return map;
+    }
+
+    function avg(values) {
+      const valid = values.filter(Number.isFinite);
+      if (!valid.length) return NaN;
+      return valid.reduce((a,b) => a + b, 0) / valid.length;
+    }
+    function max(values) { return Math.max(...values.filter(Number.isFinite)); }
+    function min(values) { return Math.min(...values.filter(Number.isFinite)); }
+    function ma(closes, n, endOffset = 0) {
+      const end = closes.length - endOffset;
+      if (end < n) return NaN;
+      return avg(closes.slice(end - n, end));
+    }
+    function ret(closes, days) {
+      if (closes.length <= days) return NaN;
+      const now = closes[closes.length - 1], past = closes[closes.length - 1 - days];
+      return past ? now / past - 1 : NaN;
+    }
+    function slopeMA(closes, n, slopeDays) {
+      const now = ma(closes, n, 0);
+      const prev = ma(closes, n, slopeDays);
+      if (!Number.isFinite(now) || !Number.isFinite(prev)) return NaN;
+      return now / prev - 1;
+    }
+
+    function computeMetrics() {
+      const cfg = settings();
+      const benchmark = state.series.get(cfg.benchmarkTicker);
+      const benchCloses = benchmark ? benchmark.map(x => x.close) : [];
+      const bench3 = ret(benchCloses, 63);
+      const bench6 = ret(benchCloses, 126);
+      const list = [];
+
+      for (const [ticker, arr] of state.series.entries()) {
+        if (ticker === cfg.benchmarkTicker || isBenchmarkOrIndexTicker(ticker)) continue;
+        if (!isPlainStockTicker(ticker)) continue;
+        if (arr.length < 210) continue;
+        const closes = arr.map(x => x.close), highs = arr.map(x => x.high), lows = arr.map(x => x.low), vols = arr.map(x => x.volume);
+        const last = arr.at(-1), close = last.close;
+        const m50 = ma(closes, 50), m150 = ma(closes, 150), m200 = ma(closes, 200);
+        const m200Slope = slopeMA(closes, 200, cfg.slopeDays);
+        const high52 = max(highs.slice(-252)), low52 = min(lows.slice(-252));
+        const highGapPct = high52 ? close / high52 - 1 : NaN;
+        const lowLiftPct = low52 ? close / low52 - 1 : NaN;
+        const avgVol20 = avg(vols.slice(-20));
+        const avgVol50 = avg(vols.slice(-50));
+        const avgValue20B = avg(arr.slice(-20).map(x => x.close * x.volume)) / 1e9;
+        const activeRatio60 = arr.slice(-60).filter(x => x.volume > 0).length / Math.min(60, arr.length);
+        const stock3 = ret(closes, 63), stock6 = ret(closes, 126);
+        const rs3m = Number.isFinite(bench3) ? stock3 - bench3 : stock3;
+        const rs6m = Number.isFinite(bench6) ? stock6 - bench6 : stock6;
+        const rsRaw = (Number.isFinite(rs3m) ? rs3m * 0.45 : 0) + (Number.isFinite(rs6m) ? rs6m * 0.55 : 0);
+        const rsTrend = rs3m - rs6m;
+        const liquidityPass = avgValue20B >= cfg.minValueB && avgVol20 >= cfg.minVol && close >= cfg.minPrice && activeRatio60 >= cfg.minActiveRatio;
+        const trendInfo = trendStage(close, m50, m150, m200, m200Slope, highGapPct, lowLiftPct, cfg);
+        const qualityMeta = state.quality.byTicker.get(ticker) || { status: "UNKNOWN", label: "—", tone: "warn", staleSessions: NaN };
+        const baseInfo = detectBase(arr, cfg, avgVol50, m50);
+        let breakoutInfo = detectBreakout(arr, cfg, baseInfo.pivot, avgVol50);
+        if (qualityMeta.status !== "D0") {
+          breakoutInfo = { status: `Không xác nhận (${qualityMeta.label})`, tone: "warn", pass: false };
+        }
+        const stop = riskStop(arr, baseInfo.pivot, close);
+        const riskPct = Number.isFinite(stop) && stop < close ? (close - stop) / close : NaN;
+        list.push({
+          ticker,
+          exchange: last.exchange,
+          sector: last.sector,
+          date: last.date,
+          dataQuality: qualityMeta.status,
+          dataQualityLabel: qualityMeta.label,
+          dataQualityTone: qualityMeta.tone,
+          staleSessions: qualityMeta.staleSessions,
+          close, m50, m150, m200, m200Slope, high52, low52, highGapPct, lowLiftPct,
+          avgVol20, avgVol50, avgValue20B, activeRatio60, liquidityPass,
+          stock3, stock6, rs3m, rs6m, rsRaw, rsTrend,
+          trendStage: trendInfo.stage, trendTone: trendInfo.tone, trendPass: trendInfo.pass,
+          baseStatus: baseInfo.status, baseTone: baseInfo.tone, basePass: baseInfo.pass, pivot: baseInfo.pivot,
+          breakoutStatus: breakoutInfo.status, breakoutTone: breakoutInfo.tone, breakoutPass: breakoutInfo.pass,
+          stop, riskPct, rows: arr
+        });
+      }
+
+      const sortedByRs = [...list].sort((a,b) => a.rsRaw - b.rsRaw);
+      const n = Math.max(1, sortedByRs.length - 1);
+      sortedByRs.forEach((m, idx) => { m.rsPercentile = Math.round((idx / n) * 100); });
+
+      for (const m of list) {
+        m.leaderPass = m.liquidityPass && m.trendPass && m.rsPercentile >= cfg.leaderRS && m.rs3m > 0 && m.rs6m > 0;
+        m.earlyPass = m.liquidityPass && m.trendPass && !m.leaderPass && m.rsPercentile >= cfg.earlyRS && (m.rsTrend > 0 || m.rs3m > 0);
+        m.anyRsPass = m.leaderPass || m.earlyPass;
+      }
+
+      return list;
+    }
+
+    function m50Safe(m) {
+      return Number.isFinite(m.m50) ? m.m50 : m.close;
+    }
+
+    function trendStage(close, m50, m150, m200, m200Slope, highGapPct, lowLiftPct, cfg) {
+      const strong = close > m50 && m50 > m150 && m150 > m200 && m200Slope > 0 && highGapPct >= -cfg.maxHighGap && lowLiftPct >= cfg.minLowLift;
+      if (strong) return { stage: "Stage 2 mạnh", tone: "good", pass: true };
+      const early = close > m50 && close > m200 && m50 > m150 && m200Slope > -0.015;
+      if (early) return { stage: "Stage 2 sớm", tone: "info", pass: true };
+      const acc = close > m150 && Math.abs((m50 / m150) - 1) < 0.08;
+      if (acc) return { stage: "Tích lũy", tone: "warn", pass: false };
+      const down = close < m200 && m50 < m200;
+      if (down) return { stage: "Downtrend", tone: "bad", pass: false };
+      return { stage: "Trung tính", tone: "warn", pass: false };
+    }
+
+    function detectBase(arr, cfg, avgVol50, m50) {
+      const n = Math.min(cfg.baseDays, arr.length);
+      const base = arr.slice(-n);
+      const highs = base.map(x => x.high), lows = base.map(x => x.low), closes = base.map(x => x.close), vols = base.map(x => x.volume);
+      const pivot = max(highs.slice(0, Math.max(1, highs.length - 3)));
+      const range = max(highs) / min(lows) - 1;
+      const half = Math.floor(base.length / 2);
+      const r1 = max(highs.slice(0, half)) / min(lows.slice(0, half)) - 1;
+      const r2 = max(highs.slice(half)) / min(lows.slice(half)) - 1;
+      const v1 = avg(vols.slice(0, half)), v2 = avg(vols.slice(half));
+      const close = closes.at(-1);
+      const contraction = Number.isFinite(r1) && Number.isFinite(r2) && r2 < r1 * 0.78;
+      const volContraction = Number.isFinite(v1) && Number.isFinite(v2) && v2 < v1 * 0.88;
+      const nearMA50 = Number.isFinite(m50) ? close > m50 * 0.94 : true;
+      const tight20 = (() => {
+        const b = arr.slice(-20);
+        if (b.length < 20) return false;
+        return max(b.map(x => x.high)) / min(b.map(x => x.low)) - 1 < 0.12;
+      })();
+      const selloff = base.some((x, i) => i > 0 && x.close / base[i-1].close - 1 < -0.065 && x.volume > avgVol50 * 1.8);
+      if (selloff) return { status: "Nền lỗi", tone: "bad", pass: false, pivot };
+      if (contraction && volContraction && nearMA50 && range < 0.35) return { status: "Có dấu hiệu VCP", tone: "purple", pass: true, pivot };
+      if ((tight20 || range < 0.18) && volContraction) return { status: "Nền chặt", tone: "good", pass: true, pivot };
+      if (range < 0.30 && nearMA50) return { status: "Đang tạo nền", tone: "info", pass: true, pivot };
+      return { status: "Không có nền", tone: "warn", pass: false, pivot };
+    }
+
+    function detectBreakout(arr, cfg, pivot, avgVol50) {
+      const last = arr.at(-1);
+      if (!Number.isFinite(pivot) || !last) return { status: "Chưa có pivot", tone: "warn", pass: false };
+      const dist = last.close / pivot - 1;
+      if (last.close > pivot && last.volume >= avgVol50 * cfg.breakVolMultiple) return { status: "Breakout có volume", tone: "good", pass: true };
+      if (last.close > pivot) return { status: "Vượt pivot volume yếu", tone: "warn", pass: true };
+      if (dist >= -cfg.nearPivotPct) return { status: "Gần pivot", tone: "info", pass: true };
+      return { status: "Chưa gần điểm mua", tone: "warn", pass: false };
+    }
+
+    function riskStop(arr, pivot, close) {
+      const low20 = min(arr.slice(-20).map(x => x.low));
+      const byPivot = pivot * 0.93;
+      const candidate = Math.max(low20 * 0.99, byPivot);
+      if (!Number.isFinite(candidate) || candidate >= close) return pivot * 0.92;
+      return candidate;
+    }
+
+    function dateToTime(yyyyMMdd) {
+      const d = new Date(`${yyyyMMdd}T00:00:00`);
+      return Number.isNaN(d.getTime()) ? NaN : d.getTime();
+    }
+
+    function daysBetween(a, b) {
+      const ta = dateToTime(a), tb = dateToTime(b);
+      if (!Number.isFinite(ta) || !Number.isFinite(tb)) return NaN;
+      return Math.round((tb - ta) / 86400000);
+    }
+
+    function analyzeDataQuality(series) {
+      const cfg = settings();
+      const tickers = [...series.keys()];
+      if (!tickers.length) return emptyQuality();
+
+      const latestDates = [];
+      for (const [ticker, arr] of series.entries()) {
+        if (!arr.length) continue;
+        if (isPlainStockTicker(ticker) || isBenchmarkOrIndexTicker(ticker)) latestDates.push(arr.at(-1).date);
+      }
+
+      const benchmarkCandidates = [cfg.benchmarkTicker, "VNINDEX", "VN30", "HNXINDEX", "UPCOMINDEX"].filter(Boolean);
+      let standardDate = null, method = "";
+      for (const b of benchmarkCandidates) {
+        const arr = series.get(String(b).toUpperCase());
+        if (arr && arr.length) { standardDate = arr.at(-1).date; method = `Theo chỉ số ${String(b).toUpperCase()}`; break; }
+      }
+      if (!standardDate) {
+        const countsByDate = new Map();
+        latestDates.forEach(d => countsByDate.set(d, (countsByDate.get(d) || 0) + 1));
+        const stockCount = tickers.filter(t => isPlainStockTicker(t)).length;
+        const minCount = Math.max(3, Math.ceil(stockCount * 0.01));
+        const candidates = [...countsByDate.entries()].filter(([,c]) => c >= minCount).sort((a,b) => b[0].localeCompare(a[0]));
+        if (candidates.length) { standardDate = candidates[0][0]; method = `Ngày mới nhất xuất hiện ở ≥${minCount} mã cổ phiếu`; }
+        else { standardDate = latestDates.sort().at(-1); method = "Ngày mới nhất trong CSV"; }
+      }
+
+      const calendar = series.get(cfg.benchmarkTicker)?.map(x => x.date) || [...new Set(state.rawRows.filter(r => isPlainStockTicker(r.ticker) || isBenchmarkOrIndexTicker(r.ticker)).map(r => r.date))].sort();
+      const dateIndex = new Map(calendar.map((d, i) => [d, i]));
+      const stdIdx = dateIndex.get(standardDate);
+      const byTicker = new Map();
+      const counts = { d0:0, d1:0, d2to5:0, stale:0, future:0, tooShort:0, invalid:0 };
+      const groups = { future: [], d0: [], d1: [], d2to5: [], stale: [], tooShort: [], invalid: [], excluded: [] };
+      const samples = [];
+
+      for (const [ticker, arr] of series.entries()) {
+        const lastDate = arr.at(-1)?.date || "";
+        let staleSessions;
+        if (dateIndex.has(lastDate) && Number.isFinite(stdIdx)) staleSessions = stdIdx - dateIndex.get(lastDate);
+        else staleSessions = daysBetween(lastDate, standardDate);
+        if (!Number.isFinite(staleSessions)) staleSessions = 9999;
+        let status, label, tone, action;
+
+        if (!isPlainStockTicker(ticker) && !isBenchmarkOrIndexTicker(ticker)) {
+          status = "INVALID"; label = "Mã không hợp lệ"; tone = "bad"; action = "Loại: chỉ giữ cổ phiếu cơ sở có đúng 3 ký tự chữ/số."; counts.invalid++;
+        } else if (isBenchmarkOrIndexTicker(ticker)) {
+          status = "INDEX"; label = "Chỉ số"; tone = "info"; action = "Dùng làm mốc so sánh nếu cần.";
+        } else if (staleSessions < 0) { status = "FUTURE"; label = "Sau ngày chuẩn"; tone = "bad"; action = "Nhóm kiểm tra riêng: ngày dữ liệu lớn hơn ngày chuẩn."; counts.future++; }
+        else if (arr.length < 210) { status = "TOO_SHORT"; label = "Thiếu lịch sử"; tone = "warn"; action = "Không đủ dữ liệu MA200/52W."; counts.tooShort++; }
+        else if (staleSessions === 0) { status = "D0"; label = "D0"; tone = "good"; action = "Có thể chạy pipeline theo nhóm D0."; counts.d0++; }
+        else if (staleSessions === 1) { status = "D1"; label = "D-1"; tone = "info"; action = "Có thể chạy pipeline tham khảo, không xác nhận breakout mới."; counts.d1++; }
+        else if (staleSessions <= 5) { status = "D2_D5"; label = `D-${staleSessions}`; tone = "warn"; action = "Chạy pipeline tham khảo, không dùng để xác nhận tín hiệu mới."; counts.d2to5++; }
+        else { status = "STALE"; label = `Trễ ${staleSessions} phiên`; tone = "bad"; action = "Dữ liệu quá cũ. Chỉ xem tham khảo nếu cần."; counts.stale++; }
+
+        const item = { ticker, lastDate, status, label, tone, staleSessions, rows: arr.length, action };
+        byTicker.set(ticker, item);
+        if (status === "FUTURE") groups.future.push(item);
+        else if (status === "D0") groups.d0.push(item);
+        else if (status === "D1") groups.d1.push(item);
+        else if (status === "D2_D5") groups.d2to5.push(item);
+        else if (status === "STALE") groups.stale.push(item);
+        else if (status === "TOO_SHORT") groups.tooShort.push(item);
+        else if (status === "INVALID") groups.invalid.push(item);
+        if (!["D0","INDEX"].includes(status)) groups.excluded.push(item);
+        if (!["D0","INDEX"].includes(status) && samples.length < 120) samples.push(item);
+      }
+
+      for (const key of Object.keys(groups)) groups[key].sort((a,b) => a.ticker.localeCompare(b.ticker));
+
+      const today = new Date();
+      const todayStr = today.toISOString().slice(0,10);
+      const ageDays = daysBetween(standardDate, todayStr);
+      const activeGroup = state.activeQualityGroup || "d0";
+      const activeTickers = new Set((groups[activeGroup] || []).map(x => x.ticker));
+      return { standardDate, method, ageDays, totalTickers: tickers.length, activeTickers, byTicker, counts, groups, samples };
+    }
+
+    function getActiveQualityTickerSet() {
+      const q = state.quality || emptyQuality();
+      const group = state.activeQualityGroup || "d0";
+      return new Set((q.groups?.[group] || []).map(x => x.ticker));
+    }
+
+    function rebuildPipelineForActiveQuality() {
+      const cfg = settings();
+      const active = getActiveQualityTickerSet();
+      state.filteredRows = state.rawRows.filter(r => active.has(r.ticker) || r.ticker === cfg.benchmarkTicker || r.ticker === "VNINDEX");
+      state.series = buildSeries(state.filteredRows);
+      state.metrics = computeMetrics();
+      buildStages();
+    }
+
+    function runScreener() {
+      if (!state.rawRows.length) loadDemoData(false);
+      state.fullSeries = buildSeries(state.rawRows);
+      state.quality = analyzeDataQuality(state.fullSeries);
+      rebuildPipelineForActiveQuality();
+      renderAll();
+      toast(`Đã chạy pipeline theo nhóm ${qualityGroupLabel(state.activeQualityGroup)}.`);
+    }
+
+    function buildStages() {
+      const m = state.metrics;
+      state.stages = {
+        liquidity: m.filter(x => x.liquidityPass),
+        trend: m.filter(x => x.liquidityPass && x.trendPass),
+        leader: m.filter(x => x.leaderPass),
+        early: m.filter(x => x.earlyPass),
+        base: m.filter(x => x.anyRsPass && x.basePass),
+        breakout: m.filter(x => x.anyRsPass && x.basePass && x.breakoutPass),
+        watchlist: m.filter(x => state.watchlist.has(x.ticker))
+      };
+    }
+
+    function renderAll() {
+      renderDashboard();
+      renderMarketSnapshot();
+      renderQualityReport();
+      renderPipeline();
+      renderTrackCards();
+      renderTabs();
+      renderTable();
+    }
+
+    function renderDashboard() {
+      const q = state.quality || emptyQuality();
+      $("universeCount").textContent = q.totalTickers || state.fullSeries.size || state.series.size || 0;
+      const activeCount = getActiveQualityTickerSet().size || 0;
+      $("qualityValidCount").textContent = activeCount;
+      const excluded = Math.max(0, (q.totalTickers || 0) - activeCount);
+      $("qualityExcludedCount").textContent = excluded;
+      const activeLabel = qualityGroupLabel(state.activeQualityGroup);
+      if ($("activeQualitySubmetric")) $("activeQualitySubmetric").textContent = activeLabel;
+      if ($("activeQualityLabel")) $("activeQualityLabel").textContent = activeLabel;
+      $("leaderCount").textContent = state.stages.leader?.length || 0;
+      $("earlyCount").textContent = state.stages.early?.length || 0;
+      const cfg = settings();
+      const diag = state.importDiagnostics;
+      const importNote = diag && state.lastDataSource !== "Demo" ? ` • đọc ${diag.validRows.toLocaleString("vi-VN")}/${diag.inputRows.toLocaleString("vi-VN")} dòng${diag.skippedRows ? `, bỏ ${diag.skippedRows.toLocaleString("vi-VN")} dòng lỗi` : ""}` : "";
+      $("dataStatus").textContent = `Nguồn: ${state.lastDataSource}${importNote}. Có ${state.rawRows.length.toLocaleString("vi-VN")} dòng hợp lệ, ${q.totalTickers.toLocaleString("vi-VN")} mã/chỉ số. Pipeline đang dùng nhóm ${qualityGroupLabel(state.activeQualityGroup)} với ${activeCount.toLocaleString("vi-VN")} mã.`;
+    }
+
+    function renderQualityReport() {
+      const q = state.quality || emptyQuality();
+      const c = q.counts || {};
+      const current = state.qualityView;
+      const active = state.activeQualityGroup || "d0";
+      const cards = [
+        ["future", "Sau ngày chuẩn", c.future || 0, "Ngày dữ liệu lớn hơn ngày chuẩn"],
+        ["d0", "Ngày chuẩn / D0", c.d0 || 0, "Lọc pipeline theo đúng ngày chuẩn"],
+        ["d1", "D-1", c.d1 || 0, "Lọc pipeline theo nhóm trễ 1 phiên"],
+        ["d2to5", "D-2 đến D-5", c.d2to5 || 0, "Lọc tham khảo theo nhóm trễ 2–5 phiên"],
+        ["stale", "Trễ > 5 phiên", c.stale || 0, "Dữ liệu quá cũ, chỉ kiểm tra tham khảo"],
+        ["tooShort", "Thiếu lịch sử", c.tooShort || 0, "Không đủ dữ liệu MA200/52W"],
+        ["invalid", "Mã không hợp lệ", c.invalid || 0, "Loại quỹ/chứng quyền/mã không phải cổ phiếu cơ sở 3 ký tự"]
+      ];
+      $("qualitySummary").innerHTML = cards.map(([key,k,v,s]) => `
+        <div class="quality-box ${current === key ? "active" : ""}" data-quality-view="${key}">
+          <div class="k">${escapeHtml(k)}</div>
+          <div class="v">${escapeHtml(v)}</div>
+          <div class="s">${escapeHtml(s)}${active === key ? " • Đang dùng" : ""}</div>
+        </div>`).join("");
+      $("qualitySummary").querySelectorAll("[data-quality-view]").forEach(card => card.addEventListener("click", () => {
+        const key = card.dataset.qualityView;
+        state.activeQualityGroup = key;
+        state.qualityView = key;
+        state.qualityListVisible = false;
+        state.currentStage = null;
+        rebuildPipelineForActiveQuality();
+        renderAll();
+        toast(`Đã chọn nhóm ${qualityGroupLabel(key)} cho pipeline.`);
+      }));
+      const warnings = [];
+      if (q.standardDate && q.standardDate !== "—") warnings.push(`Ngày chuẩn hiện tại: ${q.standardDate} (${q.method || "—"}).`);
+      warnings.push(`Pipeline hiện đang dùng nhóm: ${qualityGroupLabel(state.activeQualityGroup)}.`);
+      if (Number.isFinite(q.ageDays) && q.ageDays > 10) warnings.push(`Cảnh báo: ngày chuẩn ${q.standardDate} đang cách ngày hiện tại khoảng ${q.ageDays} ngày. File CSV có thể quá cũ.`);
+      if (!state.series.has(settings().benchmarkTicker)) warnings.push(`Cảnh báo: không có ${settings().benchmarkTicker} trong nhóm đang chọn, RS sẽ kém tin cậy.`);
+      if ((c.invalid || 0) > 0) warnings.push(`${c.invalid} mã không hợp lệ đã bị tách riêng: chỉ giữ cổ phiếu cơ sở có đúng 3 ký tự chữ/số trong pipeline.`);
+      if ((c.future || 0) > 0) warnings.push(`${c.future} mã có ngày sau ngày chuẩn. Có thể xem riêng bằng ô “Sau ngày chuẩn”.`);
+      if ((c.stale || 0) > 0) warnings.push(`${c.stale} mã bị trễ trên 5 phiên. Chỉ nên dùng để kiểm tra dữ liệu, không xác nhận tín hiệu mới.`);
+      if ((c.d2to5 || 0) > 0) warnings.push(`${c.d2to5} mã trễ 2–5 phiên: có thể lọc tham khảo, không dùng để xác nhận breakout mới.`);
+      $("qualityNotes").innerHTML = warnings.length ? warnings.map(w => `• ${escapeHtml(w)}`).join("<br>") : "Dữ liệu đạt yêu cầu đồng nhất ngày theo nhóm đang chọn.";
+
+      if (!state.qualityView) {
+        $("qualityTableWrap").innerHTML = `<div class="result-hint">Bảng chi tiết đang được ẩn. Nhấn vào một ô trong <b>Data Quality Gate</b> để chọn nhóm ngày cho pipeline và xem danh sách mã tương ứng.</div>`;
+        return;
+      }
+      const labels = {
+        future: "Sau ngày chuẩn",
+        d0: "Ngày chuẩn / D0",
+        d1: "D-1",
+        d2to5: "D-2 đến D-5",
+        stale: "Trễ > 5 phiên",
+        tooShort: "Thiếu lịch sử",
+        invalid: "Mã không hợp lệ"
+      };
+      const rows = q.groups?.[state.qualityView] || [];
+      const listVisible = !!state.qualityListVisible;
+      const groupName = labels[state.qualityView] || state.qualityView;
+      const listHtml = rows.length
+        ? `<table class="quality-table"><thead><tr><th>Mã</th><th>Ngày cuối</th><th>Trạng thái</th><th>Số dòng</th><th>Cách xử lý</th></tr></thead><tbody>${rows.slice(0,150).map(x => `<tr><td><b>${escapeHtml(x.ticker)}</b></td><td>${escapeHtml(x.lastDate)}</td><td>${pill(x.label, x.tone)}</td><td>${escapeHtml(x.rows)}</td><td>${escapeHtml(x.action)}</td></tr>`).join("")}</tbody></table><div class="muted-small">Hiển thị tối đa 150 mã trong nhóm này. Bấm “Xuất stale_tickers.csv” để lấy toàn bộ mã bị loại/cảnh báo.</div>`
+        : `<div class="empty">Không có mã trong nhóm này.</div>`;
+      $("qualityTableWrap").innerHTML = `<div class="quality-table-wrap">
+        <div class="quality-list-head">
+          <div class="status-line">Đang xem/chọn: <b>${escapeHtml(groupName)}</b> — ${rows.length.toLocaleString("vi-VN")} mã.</div>
+          <button id="toggleQualityRowsBtn" class="btn small">${listVisible ? "Ẩn danh sách cổ phiếu" : "Hiện danh sách cổ phiếu"}</button>
+        </div>
+        ${listVisible ? listHtml : `<div class="result-hint">Danh sách cổ phiếu đang được ẩn để giao diện gọn hơn. Bấm <b>Hiện danh sách cổ phiếu</b> nếu cần xem chi tiết nhóm ${escapeHtml(groupName)}.</div>`}
+      </div>`;
+      const toggleBtn = $("toggleQualityRowsBtn");
+      if (toggleBtn) toggleBtn.addEventListener("click", () => {
+        state.qualityListVisible = !state.qualityListVisible;
+        renderQualityReport();
+      });
+    }
+
+    function selectStage(stageKey) {
+      state.currentStage = stageKey;
+      state.currentTab = "all";
+      renderAll();
+    }
+
+    function renderPipeline() {
+      const wrap = $("pipeline");
+      wrap.innerHTML = stageMeta.map(([key, name, desc]) => {
+        const count = state.stages[key]?.length || 0;
+        return `<div class="stage ${state.currentStage === key ? "active" : ""}" data-stage="${key}">
+          <div class="name">${escapeHtml(name)}</div>
+          <div class="num">${count}</div>
+          <div class="desc">${escapeHtml(desc)}</div>
+        </div>`;
+      }).join("");
+      wrap.querySelectorAll(".stage").forEach(el => el.addEventListener("click", () => {
+        selectStage(el.dataset.stage);
+      }));
+    }
+
+    function renderTrackCards() {
+      document.querySelectorAll("[data-stage-card]").forEach(card => {
+        card.classList.toggle("active", state.currentStage === card.dataset.stageCard);
+        card.onclick = () => selectStage(card.dataset.stageCard);
+      });
+    }
+
+    function renderTabs() {
+      const tabs = [
+        ["all", "Tất cả"],
+        ["hose", "HOSE"],
+        ["hnx", "HNX"],
+        ["upcom", "UPCOM"],
+        ["watch", "Đã lưu"]
+      ];
+      $("tabs").innerHTML = tabs.map(([k, label]) => `<button class="tab ${state.currentTab === k ? "active" : ""}" data-tab="${k}">${label}</button>`).join("");
+      $("tabs").querySelectorAll(".tab").forEach(btn => btn.addEventListener("click", () => {
+        state.currentTab = btn.dataset.tab;
+        renderTabs();
+        renderTable();
+      }));
+    }
+
+    function visibleRows() {
+      const q = $("searchInput").value.trim().toLowerCase();
+      if (!state.currentStage) return [];
+      let rows = state.stages[state.currentStage] || [];
+      if (state.currentTab === "hose") rows = rows.filter(x => x.exchange === "HOSE");
+      if (state.currentTab === "hnx") rows = rows.filter(x => x.exchange === "HNX");
+      if (state.currentTab === "upcom") rows = rows.filter(x => x.exchange === "UPCOM");
+      if (state.currentTab === "watch") rows = rows.filter(x => state.watchlist.has(x.ticker));
+      if (q) {
+        rows = rows.filter(x => [x.ticker, x.exchange, x.sector, x.trendStage, x.baseStatus, x.breakoutStatus].join(" ").toLowerCase().includes(q));
+      }
+      rows = [...rows].sort((a,b) => compare(a,b,state.sortKey,state.sortDir));
+      return rows;
+    }
+
+    function compare(a,b,key,dir) {
+      let va = a[key], vb = b[key];
+      if (typeof va === "string") va = va.toLowerCase();
+      if (typeof vb === "string") vb = vb.toLowerCase();
+      if (va === undefined || va === null || Number.isNaN(va)) return 1;
+      if (vb === undefined || vb === null || Number.isNaN(vb)) return -1;
+      const result = va > vb ? 1 : va < vb ? -1 : 0;
+      return dir === "asc" ? result : -result;
+    }
+
+    function renderTable() {
+      const body = $("resultBody");
+      if (!state.currentStage) {
+        updateResultMeta(0);
+        $("resultHint").classList.remove("is-hidden");
+        $("resultControls").classList.add("is-hidden");
+        $("resultTableWrap").classList.add("is-hidden");
+        body.innerHTML = "";
+        $("emptyState").style.display = "none";
+        return;
+      }
+      $("resultHint").classList.add("is-hidden");
+      $("resultControls").classList.remove("is-hidden");
+      $("resultTableWrap").classList.remove("is-hidden");
+      const rows = visibleRows();
+      updateResultMeta(rows.length);
+      $("emptyState").style.display = rows.length ? "none" : "block";
+      body.innerHTML = rows.map(x => rowHtml(x)).join("");
+      body.querySelectorAll("[data-detail]").forEach(btn => btn.addEventListener("click", () => openDetail(btn.dataset.detail)));
+      body.querySelectorAll("[data-ticker-open]").forEach(btn => btn.addEventListener("click", () => openDetail(btn.dataset.tickerOpen)));
+      body.querySelectorAll("[data-watch]").forEach(btn => btn.addEventListener("click", () => toggleWatch(btn.dataset.watch)));
+    }
+
+    function rowHtml(x) {
+      return `<tr>
+        <td class="stock-main" data-label="Mã"><button class="ticker-button" type="button" data-ticker-open="${escapeHtml(x.ticker)}">${escapeHtml(x.ticker)}</button></td>
+        <td data-label="Sàn">${escapeHtml(x.exchange)}</td>
+        <td data-label="Ngành">${escapeHtml(x.sector)}</td>
+        <td data-label="Ngày">${escapeHtml(x.date)}</td>
+        <td data-label="Data">${pill(x.dataQualityLabel || "—", x.dataQualityTone || "warn")}</td>
+        <td class="money" data-label="Giá">${fmtPrice(x.close)}</td>
+        <td class="money" data-label="GTGD TB20">${fmtNum(x.avgValue20B, 2)} tỷ</td>
+        <td data-label="Trend">${pill(x.trendStage, x.trendTone)}</td>
+        <td class="numcell" data-label="Cách đỉnh 52W">${fmtPct(x.highGapPct, 1)}</td>
+        <td data-label="RS Percentile">${pill(String(x.rsPercentile), x.rsPercentile >= 70 ? "good" : x.rsPercentile >= 45 ? "info" : "warn")}</td>
+        <td class="numcell" data-label="RS 3M">${fmtPct(x.rs3m, 1)}</td>
+        <td class="numcell" data-label="RS 6M">${fmtPct(x.rs6m, 1)}</td>
+        <td data-label="RS Trend">${pill(x.rsTrend > 0 ? "Cải thiện" : "Suy yếu", x.rsTrend > 0 ? "good" : "warn")}</td>
+        <td data-label="Base / VCP">${pill(x.baseStatus, x.baseTone)}</td>
+        <td data-label="Breakout">${pill(x.breakoutStatus, x.breakoutTone)}</td>
+        <td class="numcell" data-label="Risk">${fmtPct(x.riskPct, 1)}</td>
+        <td class="actions-cell" data-label="Thao tác">
+          <button class="btn small" data-detail="${x.ticker}">Chi tiết</button>
+          <button class="btn small ${state.watchlist.has(x.ticker) ? "warn" : "good"}" data-watch="${x.ticker}">${state.watchlist.has(x.ticker) ? "Bỏ lưu" : "Lưu"}</button>
+        </td>
+      </tr>`;
+    }
+
+    function openDetail(ticker) {
+      const x = state.metrics.find(m => m.ticker === ticker);
+      if (!x) return;
+      state.selectedTicker = ticker;
+      $("modalTitle").textContent = `${x.ticker} — ${x.exchange}`;
+      $("modalSubtitle").textContent = `${x.sector} • dữ liệu tới ${x.date}`;
+      $("modalWatchBtn").textContent = state.watchlist.has(ticker) ? "Bỏ khỏi Watchlist" : "Thêm Watchlist";
+      $("detailFacts").innerHTML = [
+        ["Giá", fmtPrice(x.close)],
+        ["Ngày dữ liệu", x.date],
+        ["Data Gate", `${x.dataQualityLabel} (${Number.isFinite(x.staleSessions) ? x.staleSessions : "—"} phiên)`],
+        ["Trend", x.trendStage],
+        ["RS Percentile", x.rsPercentile],
+        ["RS 3M / 6M", `${fmtPct(x.rs3m)} / ${fmtPct(x.rs6m)}`],
+        ["Nền giá", x.baseStatus],
+        ["Pivot", fmtPrice(x.pivot)],
+        ["Breakout", x.breakoutStatus],
+        ["Stop kỹ thuật", fmtPrice(x.stop)],
+        ["Rủi ro", fmtPct(x.riskPct)],
+        ["Không mua đuổi trên", fmtPrice(x.pivot * 1.05)]
+      ].map(([k,v]) => `<div class="fact"><div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div></div>`).join("");
+      $("detailNotes").innerHTML = `<h3>Ghi chú phân tích</h3>
+        <p>Pipeline hiện tại: ${escapeHtml(x.liquidityPass ? "Đạt thanh khoản" : "Không đạt thanh khoản")} → ${escapeHtml(x.trendStage)} → ${escapeHtml(x.leaderPass ? "Leader Track" : x.earlyPass ? "Early Watch Track" : "Chưa đạt RS split")} → ${escapeHtml(x.baseStatus)} → ${escapeHtml(x.breakoutStatus)}.</p>
+        <p style="margin-top:8px;">Nếu Data Gate không phải D0, tín hiệu breakout/volume mới nhất sẽ không được xác nhận. Fundamental Snapshot sẽ được bổ sung ở phase sau, chỉ kích hoạt cho các mã đã lưu vào Watchlist.</p>`;
+      $("modalBackdrop").style.display = "flex";
+      setTimeout(() => drawChart(x), 20);
+    }
+
+    function drawChart(x) {
+      const canvas = $("priceCanvas");
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = "#0B1017";
+      ctx.fillRect(0,0,w,h);
+      const data = x.rows.slice(-160);
+      const prices = data.flatMap(r => [r.high, r.low]).concat([x.m50, x.m150, x.m200]).filter(Number.isFinite);
+      const pMin = Math.min(...prices) * 0.98, pMax = Math.max(...prices) * 1.02;
+      const left = 44, right = 16, top = 20, bottom = 40;
+      const X = i => left + (i / Math.max(1, data.length - 1)) * (w - left - right);
+      const Y = p => top + (pMax - p) / (pMax - pMin) * (h - top - bottom);
+      ctx.strokeStyle = "rgba(255,255,255,.08)";
+      ctx.lineWidth = 1;
+      for (let i=0; i<5; i++) {
+        const y = top + i * (h-top-bottom)/4;
+        ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(w-right,y); ctx.stroke();
+      }
+      for (let i=0; i<data.length; i++) {
+        const r = data[i], x0 = X(i), yO = Y(r.open), yC = Y(r.close), yH = Y(r.high), yL = Y(r.low);
+        const up = r.close >= r.open;
+        ctx.strokeStyle = up ? "#34d399" : "#fb7185";
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.beginPath(); ctx.moveTo(x0, yH); ctx.lineTo(x0, yL); ctx.stroke();
+        const bw = Math.max(2, (w-left-right)/data.length * 0.55);
+        ctx.fillRect(x0 - bw/2, Math.min(yO,yC), bw, Math.max(1, Math.abs(yC-yO)));
+      }
+      function line(val, color, label) {
+        if (!Number.isFinite(val)) return;
+        const y = Y(val);
+        ctx.strokeStyle = color; ctx.setLineDash([5,5]); ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(w-right,y); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = color; ctx.font = "12px sans-serif"; ctx.fillText(label + " " + fmtPrice(val), left + 6, y - 5);
+      }
+      line(x.pivot, "#60a5fa", "Pivot");
+      line(x.stop, "#fb7185", "Stop");
+      ctx.fillStyle = "#9fb0d0"; ctx.font = "12px sans-serif"; ctx.fillText("160 phiên gần nhất", left, h - 12);
+    }
+
+    function toggleWatch(ticker) {
+      if (state.watchlist.has(ticker)) state.watchlist.delete(ticker);
+      else state.watchlist.add(ticker);
+      writeWatchlistStorage([...state.watchlist]);
+      buildStages();
+      renderAll();
+      if ($("modalBackdrop").style.display === "flex" && state.selectedTicker === ticker) {
+        $("modalWatchBtn").textContent = state.watchlist.has(ticker) ? "Bỏ khỏi Watchlist" : "Thêm Watchlist";
+      }
+      toast(state.watchlist.has(ticker) ? `Đã lưu ${ticker} vào Watchlist.` : `Đã bỏ ${ticker} khỏi Watchlist.`);
+    }
+
+    function exportCsv() {
+      if (!state.currentStage) { toast("Hãy chọn một vòng lọc hoặc Leader/Early Watch trước khi xuất CSV."); return; }
+      const rows = visibleRows();
+      const header = ["ticker","exchange","sector","date","data_quality","stale_sessions","close","avg_value_20b","trend_stage","high_gap_pct","rs_percentile","rs_3m","rs_6m","rs_trend","base_status","breakout_status","pivot","stop","risk_pct"];
+      const lines = [header.join(",")];
+      for (const x of rows) {
+        lines.push([x.ticker,x.exchange,x.sector,x.date,x.dataQualityLabel,x.staleSessions,x.close,x.avgValue20B,x.trendStage,x.highGapPct,x.rsPercentile,x.rs3m,x.rs6m,x.rsTrend,x.baseStatus,x.breakoutStatus,x.pivot,x.stop,x.riskPct].map(csvCell).join(","));
+      }
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `alpha_stock_${state.currentStage}.csv`; a.click();
+      URL.revokeObjectURL(url);
+    }
+    function exportStaleCsv() {
+      const q = state.quality || emptyQuality();
+      const rows = [...(q.byTicker?.values() || [])].filter(x => x.status !== "D0");
+      const header = ["ticker","last_date","status","label","stale_sessions","rows","action"];
+      const lines = [header.join(",")];
+      for (const x of rows) lines.push([x.ticker,x.lastDate,x.status,x.label,x.staleSessions,x.rows,x.action].map(csvCell).join(","));
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "stale_tickers.csv"; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function csvCell(v) {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+
+    function toast(msg) {
+      const el = $("toast");
+      el.textContent = msg;
+      el.style.display = "block";
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.style.display = "none", 2400);
+    }
+
+
+
+    const PROVIDERS = {
+      vndirect: {
+        name: "VNDIRECT public API",
+        stockListUrls: [
+          "https://finfo-api.vndirect.com.vn/v4/stocks?sort=code&q=type:STOCK&size=3000&page=1",
+          "https://api-finfo.vndirect.com.vn/v4/stocks?sort=code&q=type:STOCK&size=3000&page=1"
+        ],
+        priceUrls: (ticker, fromDate, pageSize) => [
+          `https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=code:${encodeURIComponent(ticker)}~date:gte:${fromDate}&size=${pageSize}&page=1`,
+          `https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=code:${encodeURIComponent(ticker)}~date:gte:${fromDate}&size=${pageSize}&page=1`
+        ]
+      }
+    };
+
+    const FALLBACK_TICKERS = [
+      { ticker:"VNINDEX", exchange:"INDEX", sector:"Chỉ số" },
+      { ticker:"FPT", exchange:"HOSE", sector:"Công nghệ" }, { ticker:"HPG", exchange:"HOSE", sector:"Thép" },
+      { ticker:"MWG", exchange:"HOSE", sector:"Bán lẻ" }, { ticker:"GMD", exchange:"HOSE", sector:"Cảng biển" },
+      { ticker:"ACV", exchange:"UPCOM", sector:"Hạ tầng hàng không" }, { ticker:"MBB", exchange:"HOSE", sector:"Ngân hàng" },
+      { ticker:"VCB", exchange:"HOSE", sector:"Ngân hàng" }, { ticker:"TCB", exchange:"HOSE", sector:"Ngân hàng" },
+      { ticker:"ACB", exchange:"HOSE", sector:"Ngân hàng" }, { ticker:"STB", exchange:"HOSE", sector:"Ngân hàng" },
+      { ticker:"DGC", exchange:"HOSE", sector:"Hóa chất" }, { ticker:"REE", exchange:"HOSE", sector:"Điện & hạ tầng" },
+      { ticker:"VGI", exchange:"UPCOM", sector:"Viễn thông" }, { ticker:"PVS", exchange:"HNX", sector:"Dầu khí" },
+      { ticker:"IDC", exchange:"HNX", sector:"KCN" }, { ticker:"VHM", exchange:"HOSE", sector:"Bất động sản" },
+      { ticker:"VIC", exchange:"HOSE", sector:"Bất động sản" }, { ticker:"VRE", exchange:"HOSE", sector:"Bất động sản" },
+      { ticker:"SSI", exchange:"HOSE", sector:"Chứng khoán" }, { ticker:"VND", exchange:"HOSE", sector:"Chứng khoán" },
+      { ticker:"HCM", exchange:"HOSE", sector:"Chứng khoán" }, { ticker:"KDH", exchange:"HOSE", sector:"Bất động sản" },
+      { ticker:"PNJ", exchange:"HOSE", sector:"Bán lẻ" }, { ticker:"FRT", exchange:"HOSE", sector:"Bán lẻ" },
+      { ticker:"DGW", exchange:"HOSE", sector:"Phân phối" }, { ticker:"MSN", exchange:"HOSE", sector:"Tiêu dùng" },
+      { ticker:"VNM", exchange:"HOSE", sector:"Tiêu dùng" }, { ticker:"SAB", exchange:"HOSE", sector:"Tiêu dùng" },
+      { ticker:"GAS", exchange:"HOSE", sector:"Dầu khí" }, { ticker:"PLX", exchange:"HOSE", sector:"Dầu khí" },
+      { ticker:"POW", exchange:"HOSE", sector:"Điện" }, { ticker:"PC1", exchange:"HOSE", sector:"Điện & xây lắp" },
+      { ticker:"NT2", exchange:"HOSE", sector:"Điện" }, { ticker:"HSG", exchange:"HOSE", sector:"Thép" },
+      { ticker:"NKG", exchange:"HOSE", sector:"Thép" }, { ticker:"VCG", exchange:"HOSE", sector:"Xây dựng" },
+      { ticker:"LCG", exchange:"HOSE", sector:"Xây dựng" }, { ticker:"CTR", exchange:"HOSE", sector:"Viễn thông" },
+      { ticker:"FOX", exchange:"UPCOM", sector:"Công nghệ" }, { ticker:"BSR", exchange:"UPCOM", sector:"Dầu khí" },
+      { ticker:"MCH", exchange:"UPCOM", sector:"Tiêu dùng" }, { ticker:"QNS", exchange:"UPCOM", sector:"Tiêu dùng" }
+    ];
+
+    function dateDaysAgo(days) {
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      return d.toISOString().slice(0, 10);
+    }
+
+    async function fetchJsonAny(urls, signal) {
+      let lastError = null;
+      for (const url of urls) {
+        try {
+          const res = await fetch(url, { signal, headers: { "Accept": "application/json" } });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return await res.json();
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      throw lastError || new Error("Không tải được dữ liệu.");
+    }
+
+    function extractArray(payload) {
+      if (Array.isArray(payload)) return payload;
+      if (Array.isArray(payload?.data)) return payload.data;
+      if (Array.isArray(payload?.items)) return payload.items;
+      if (Array.isArray(payload?.results)) return payload.results;
+      return [];
+    }
+
+    function normalizeUniverseItem(item) {
+      const ticker = String(item.code || item.symbol || item.ticker || item.stockCode || "").trim().toUpperCase();
+      if (!ticker) return null;
+      if (!isPlainStockTicker(ticker)) return null;
+      const exchange = String(item.floor || item.exchange || item.floorCode || item.market || "UNKNOWN").trim().toUpperCase();
+      const sector = String(item.industryName || item.industry || item.sector || item.icbName || "Chưa phân loại").trim();
+      const type = String(item.type || item.stockType || "STOCK").toUpperCase();
+      if (type && !["STOCK", "EQUITY", "CW", ""].includes(type) && type.includes("ETF")) return null;
+      return { ticker, exchange, sector };
+    }
+
+    async function fetchTickerUniverse(provider, signal) {
+      try {
+        const payload = await fetchJsonAny(provider.stockListUrls, signal);
+        const list = extractArray(payload).map(normalizeUniverseItem).filter(Boolean);
+        const seen = new Set();
+        const clean = [];
+        for (const item of list) {
+          if (seen.has(item.ticker)) continue;
+          if (["HOSE", "HNX", "UPCOM", "INDEX", "UNKNOWN"].includes(item.exchange)) {
+            seen.add(item.ticker);
+            clean.push(item);
+          }
+        }
+        if (clean.length) return clean;
+      } catch (err) {
+        console.warn("Không tải được danh sách mã, dùng fallback.", err);
+      }
+      return FALLBACK_TICKERS.filter(x => x.ticker !== "VNINDEX");
+    }
+
+    async function fetchHistoryForTicker(provider, info, fromDate, pageSize, signal) {
+      const payload = await fetchJsonAny(provider.priceUrls(info.ticker, fromDate, pageSize), signal);
+      const items = extractArray(payload);
+      const rows = items.map(item => normalizeProviderPriceRow(item, info)).filter(Boolean);
+      return adjustPriceScale(rows, info.ticker);
+    }
+
+    function normalizeProviderPriceRow(item, info) {
+      const ticker = String(item.code || item.symbol || item.ticker || item.stockCode || info.ticker || "").trim().toUpperCase();
+      const rawDate = item.date || item.tradingDate || item.time || item.tradingdate || item.datetime;
+      const date = normalizeDate(String(rawDate || ""));
+      if (!ticker || !date) return null;
+      const open = cleanNumber(item.adOpen ?? item.open ?? item.o ?? item.basicPrice);
+      const high = cleanNumber(item.adHigh ?? item.high ?? item.h ?? item.ceilingPrice);
+      const low = cleanNumber(item.adLow ?? item.low ?? item.l ?? item.floorPrice);
+      const close = cleanNumber(item.adClose ?? item.close ?? item.c ?? item.average ?? item.basicPrice);
+      const volume = cleanNumber(item.nmVolume ?? item.volume ?? item.matchVolume ?? item.totalVolume ?? item.vol ?? 0);
+      if (![open, high, low, close].every(Number.isFinite)) return null;
+      return {
+        ticker,
+        exchange: String(item.floor || item.exchange || info.exchange || "UNKNOWN").trim().toUpperCase(),
+        sector: info.sector || "Chưa phân loại",
+        date,
+        open, high, low, close,
+        volume: Number.isFinite(volume) ? volume : 0
+      };
+    }
+
+    function adjustPriceScale(rows, ticker) {
+      if (!rows.length) return rows;
+      const isIndex = ticker.includes("INDEX") || ticker.startsWith("VN") && ticker.length > 5;
+      const sample = rows.map(r => r.close).filter(Number.isFinite).sort((a,b) => a-b);
+      const median = sample[Math.floor(sample.length / 2)];
+      const shouldMultiply = !isIndex && Number.isFinite(median) && median > 0 && median < 1000;
+      if (!shouldMultiply) return rows;
+      return rows.map(r => ({ ...r, open: r.open * 1000, high: r.high * 1000, low: r.low * 1000, close: r.close * 1000 }));
+    }
+
+    function dedupeRows(rows) {
+      const map = new Map();
+      for (const r of rows) map.set(`${r.ticker}|${r.date}`, r);
+      return [...map.values()].sort((a,b) => (a.ticker + a.date).localeCompare(b.ticker + b.date));
+    }
+
+    function ensureBenchmarkRows(rows) {
+      const cfg = settings();
+      if (rows.some(r => r.ticker === cfg.benchmarkTicker)) return rows;
+      const byTicker = buildSeries(rows);
+      const dates = new Map();
+      for (const [ticker, arr] of byTicker.entries()) {
+        if (ticker === cfg.benchmarkTicker || arr.length < 210) continue;
+        const first = arr[0].close;
+        if (!first) continue;
+        for (const r of arr) {
+          if (!dates.has(r.date)) dates.set(r.date, []);
+          dates.get(r.date).push(r.close / first * 1000);
+        }
+      }
+      const proxy = [];
+      for (const [date, vals] of dates.entries()) {
+        if (vals.length < Math.max(10, byTicker.size * 0.15)) continue;
+        vals.sort((a,b) => a-b);
+        const mid = vals[Math.floor(vals.length / 2)];
+        proxy.push({ ticker: cfg.benchmarkTicker, exchange: "INDEX", sector: "Chỉ số proxy", date, open: mid, high: mid * 1.002, low: mid * 0.998, close: mid, volume: 0 });
+      }
+      if (proxy.length >= 210) {
+        toast(`Không tải được ${cfg.benchmarkTicker}; đã tạo chỉ số proxy để tính RS.`);
+        return rows.concat(proxy);
+      }
+      return rows;
+    }
+
+    async function runLimitedPool(items, limit, worker, onProgress) {
+      const results = [];
+      let index = 0, done = 0;
+      async function next() {
+        while (index < items.length) {
+          const i = index++;
+          try {
+            const result = await worker(items[i], i);
+            results[i] = { ok: true, value: result };
+          } catch (err) {
+            results[i] = { ok: false, error: err };
+          } finally {
+            done++;
+            if (onProgress) onProgress(done, items.length, items[i]);
+          }
+        }
+      }
+      await Promise.all(Array.from({ length: Math.min(limit, items.length) }, next));
+      return results;
+    }
+
+    function setUpdateUi(active, msg = "") {
+      state.isUpdating = active;
+      $("updateFreeDataBtn").disabled = active;
+      $("cancelUpdateBtn").style.display = active ? "inline-flex" : "none";
+      $("runBtn").disabled = active;
+      $("updateProgressWrap").style.display = active ? "block" : "none";
+      if (!active) $("updateProgressBar").style.width = "0%";
+      if (msg) $("dataStatus").textContent = msg;
+    }
+
+    function updateProgress(done, total, extra = "") {
+      const pct = total ? Math.round(done / total * 100) : 0;
+      $("updateProgressBar").style.width = `${pct}%`;
+      $("dataStatus").textContent = `Đang cập nhật dữ liệu thật: ${done}/${total} mã (${pct}%). ${extra}`;
+    }
+
+    async function updateFromFreeSource() {
+      if (state.isUpdating) return;
+      const us = updateSettings();
+      const provider = PROVIDERS[us.provider] || PROVIDERS.vndirect;
+      const abort = new AbortController();
+      state.updateAbortController = abort;
+      const calendarDays = Math.ceil(us.historySessions * 1.7 + 45);
+      const fromDate = dateDaysAgo(calendarDays);
+      const pageSize = Math.max(500, Math.ceil(us.historySessions * 2.2));
+
+      try {
+        setUpdateUi(true, `Đang kết nối ${provider.name} và tải danh sách mã...`);
+        let universe = await fetchTickerUniverse(provider, abort.signal);
+        universe = universe.filter(x => x.ticker !== settings().benchmarkTicker && x.ticker !== "VNINDEX");
+        universe.sort((a,b) => (a.exchange + a.ticker).localeCompare(b.exchange + b.ticker));
+        if (us.maxTickers > 0) universe = universe.slice(0, us.maxTickers);
+        if (!universe.length) throw new Error("Không có danh sách mã để tải.");
+
+        const allRows = [];
+        let success = 0, failed = 0;
+        updateProgress(0, universe.length, `Nguồn: ${provider.name}.`);
+        const results = await runLimitedPool(universe, us.fetchConcurrency, async (info) => {
+          const rows = await fetchHistoryForTicker(provider, info, fromDate, pageSize, abort.signal);
+          const recent = rows.slice(-us.historySessions);
+          if (recent.length < 210) throw new Error("Không đủ dữ liệu lịch sử.");
+          return recent;
+        }, (done, total, info) => updateProgress(done, total, `Mới xử lý: ${info?.ticker || ""}`));
+
+        for (const r of results) {
+          if (r?.ok && Array.isArray(r.value)) { success++; allRows.push(...r.value); }
+          else failed++;
+        }
+
+        const benchTicker = settings().benchmarkTicker;
+        try {
+          const benchRows = await fetchHistoryForTicker(provider, { ticker: benchTicker, exchange: "INDEX", sector: "Chỉ số" }, fromDate, pageSize, abort.signal);
+          if (benchRows.length >= 210) allRows.push(...benchRows.slice(-us.historySessions));
+        } catch (err) {
+          console.warn("Không tải được benchmark, sẽ thử tạo proxy.", err);
+        }
+
+        let finalRows = ensureBenchmarkRows(dedupeRows(allRows));
+        if (!finalRows.length) throw new Error("Không tải được dữ liệu giá hợp lệ.");
+        state.rawRows = finalRows;
+        state.currentStage = null;
+        state.currentTab = "all";
+        state.lastDataSource = provider.name;
+        state.qualityView = null;
+        state.activeQualityGroup = "d0";
+        setUpdateUi(false, `Đã cập nhật ${finalRows.length.toLocaleString("vi-VN")} dòng dữ liệu từ ${provider.name}. Thành công ${success}/${universe.length} mã, lỗi ${failed}.`);
+        runScreener();
+        toast(`Cập nhật xong: ${success} mã có dữ liệu hợp lệ.`);
+      } catch (err) {
+        const msg = err?.name === "AbortError" ? "Đã dừng cập nhật dữ liệu." : `Không cập nhật được dữ liệu thật: ${err.message || err}`;
+        setUpdateUi(false, msg);
+        toast(msg);
+      } finally {
+        state.updateAbortController = null;
+      }
+    }
+
+    function cancelUpdate() {
+      if (state.updateAbortController) state.updateAbortController.abort();
+    }
+
+    function loadDemoData(show = true) {
+      state.rawRows = generateDemoRows();
+      state.lastDataSource = "Demo";
+      state.qualityView = null;
+      state.activeQualityGroup = "d0";
+      state.currentStage = null;
+      state.series = buildSeries(state.rawRows);
+      if (show) toast("Đã nạp dữ liệu demo.");
+      runScreener();
+    }
+
+    function generateDemoRows() {
+      const tickers = [
+        ["FPT","HOSE","Công nghệ", 100000, 0.0018, 0.020, 950000],
+        ["GMD","HOSE","Cảng biển", 69000, 0.0014, 0.018, 780000],
+        ["HPG","HOSE","Thép", 26500, 0.0009, 0.025, 19000000],
+        ["MWG","HOSE","Bán lẻ", 59000, 0.0004, 0.030, 6100000],
+        ["ACV","UPCOM","Hạ tầng hàng không", 82000, 0.0011, 0.020, 900000],
+        ["MBB","HOSE","Ngân hàng", 24500, 0.0008, 0.018, 12000000],
+        ["VCB","HOSE","Ngân hàng", 91000, 0.0005, 0.014, 2500000],
+        ["DGC","HOSE","Hóa chất", 108000, 0.0007, 0.028, 1300000],
+        ["REE","HOSE","Điện & hạ tầng", 71000, 0.0009, 0.015, 680000],
+        ["VGI","UPCOM","Viễn thông", 68000, 0.0015, 0.027, 2400000],
+        ["PVS","HNX","Dầu khí", 42000, 0.0007, 0.020, 3200000],
+        ["IDC","HNX","KCN", 61000, 0.0008, 0.020, 1600000],
+        ["XYZ","UPCOM","Thanh khoản thấp", 12000, -0.0002, 0.035, 18000]
+      ];
+      const rows = [];
+      const days = 320;
+      const demoDates = businessDatesEndingToday(days);
+      const market = buildPricePath(1250, 0.00055, 0.011, days, 2);
+      for (let i=0; i<days; i++) {
+        const d = demoDates[i];
+        rows.push(makeRow("VNINDEX", "INDEX", "Chỉ số", d, market[i], 0));
+      }
+      tickers.forEach((t, idx) => {
+        const [ticker, exchange, sector, startPrice, drift, vol, baseVol] = t;
+        const path = buildPricePath(startPrice, drift, vol, days, idx + 5);
+        for (let i=0; i<days; i++) {
+          const d = demoDates[i];
+          const close = path[i];
+          const noise = seededNoise(i + idx * 17);
+          const open = close * (1 + (noise - .5) * 0.018);
+          const high = Math.max(open, close) * (1 + 0.006 + seededNoise(i + idx * 19) * 0.018);
+          const low = Math.min(open, close) * (1 - 0.006 - seededNoise(i + idx * 23) * 0.018);
+          let v = baseVol * (0.75 + seededNoise(i * 3 + idx) * 0.7);
+          if (i > 245 && ["FPT","GMD","VGI","PVS"].includes(ticker)) v *= 0.72;
+          if (i > 285 && ["FPT","GMD"].includes(ticker)) v *= 1.8;
+          rows.push({ ticker, exchange, sector, date: d, open, high, low, close, volume: Math.round(v) });
+        }
+      });
+      return rows;
+    }
+
+    function buildPricePath(start, drift, vol, days, seed) {
+      const arr = [];
+      for (let i=0; i<days; i++) {
+        const trend = start * Math.exp(drift * i);
+        let contractionFactor = i > days - 70 ? Math.max(0.28, 1 - (i - (days - 70)) / 95) : 1;
+        const cycle = Math.sin((i + seed) / 16) * vol * 0.70 * contractionFactor;
+        const shock = (seededNoise(i + seed * 100) - .5) * vol * 0.65 * contractionFactor;
+        let p = trend * (1 + cycle + shock);
+        if (i > days - 18 && seed % 2 === 1) p *= 1 + (i - (days - 18)) / 18 * 0.055;
+        arr.push(Math.max(1000, p));
+      }
+      return arr;
+    }
+
+    function seededNoise(n) {
+      const x = Math.sin(n * 999 + 77) * 10000;
+      return x - Math.floor(x);
+    }
+
+    function businessDatesEndingToday(n) {
+      const dates = [];
+      const d = new Date();
+      d.setHours(0,0,0,0);
+      if (d.getDay() === 0) d.setDate(d.getDate() - 2);
+      if (d.getDay() === 6) d.setDate(d.getDate() - 1);
+      while (dates.length < n) {
+        const day = d.getDay();
+        if (day !== 0 && day !== 6) dates.push(d.toISOString().slice(0,10));
+        d.setDate(d.getDate() - 1);
+      }
+      return dates.reverse();
+    }
+
+    function nextBizDate(start, idx) {
+      const d = new Date(start);
+      let added = 0;
+      while (added < idx) {
+        d.setDate(d.getDate() + 1);
+        const day = d.getDay();
+        if (day !== 0 && day !== 6) added++;
+      }
+      return d.toISOString().slice(0,10);
+    }
+
+    function makeRow(ticker, exchange, sector, date, close, volume) {
+      return { ticker, exchange, sector, date, open: close, high: close * 1.004, low: close * 0.996, close, volume };
+    }
+
+    function scheduleRecomputeFromSettings() {
+      clearTimeout(scheduleRecomputeFromSettings._t);
+      scheduleRecomputeFromSettings._t = setTimeout(() => {
+        if (!state.rawRows.length) return;
+        runScreener();
+        toast("Đã áp dụng lại cấu hình bộ lọc.");
+      }, 350);
+    }
+
+    ["minValueB","minVol","minPrice","maxHighGap","minLowLift","slopeDays","leaderRS","earlyRS","benchmarkTicker","baseDays","nearPivotPct","breakVolMultiple"].forEach(id => {
+      const el = $(id);
+      if (el) el.addEventListener("change", () => { saveSettings(); scheduleRecomputeFromSettings(); });
+    });
+
+    ["dataProvider","historySessions","maxTickers","fetchConcurrency"].forEach(id => $(id)?.addEventListener("change", saveSettings));
+
+    $("runBtn").addEventListener("click", runScreener);
+    $("loadDemoBtn").addEventListener("click", () => loadDemoData(true));
+    $("updateFreeDataBtn").addEventListener("click", updateFromFreeSource);
+    $("cancelUpdateBtn").addEventListener("click", cancelUpdate);
+    $("csvInput").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        if (file.size > 80 * 1024 * 1024) toast("CSV khá lớn; trình duyệt có thể cần thêm thời gian xử lý.");
+        const text = await file.text();
+        const rows = parseCsv(text);
+        const diag = state.importDiagnostics || {};
+        if (!rows.length) { toast("Không đọc được CSV hợp lệ. Cần tối thiểu ticker/date/open/high/low/close/volume."); return; }
+        state.rawRows = rows;
+        state.lastDataSource = file.name || "CSV Import";
+        state.qualityView = null;
+        state.activeQualityGroup = "d0";
+        state.currentStage = null;
+        state.currentTab = "all";
+        runScreener();
+        const sep = diag.delimiter === ";" ? "dấu ;" : diag.delimiter === "\t" ? "tab" : "dấu ,";
+        toast(`Đã nhập ${rows.length.toLocaleString("vi-VN")} dòng hợp lệ (${sep})${diag.skippedRows ? ` • bỏ ${diag.skippedRows.toLocaleString("vi-VN")} dòng lỗi` : ""}.`);
+      } catch (err) {
+        console.error(err);
+        toast(`Lỗi khi đọc CSV: ${err?.message || err}`);
+      } finally {
+        e.target.value = "";
+      }
+    });
+    $("searchInput").addEventListener("input", renderTable);
+    $("exportBtn").addEventListener("click", exportCsv);
+    $("exportStaleBtn").addEventListener("click", exportStaleCsv);
+    $("closeModalBtn").addEventListener("click", () => $("modalBackdrop").style.display = "none");
+    $("modalBackdrop").addEventListener("click", (e) => { if (e.target.id === "modalBackdrop") $("modalBackdrop").style.display = "none"; });
+    $("modalWatchBtn").addEventListener("click", () => { if (state.selectedTicker) toggleWatch(state.selectedTicker); });
+    document.querySelectorAll("th[data-sort]").forEach(th => th.addEventListener("click", () => {
+      const key = th.dataset.sort;
+      if (state.sortKey === key) state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+      else { state.sortKey = key; state.sortDir = "desc"; }
+      renderTable();
+    }));
+
+    initUxEnhancements();
+    loadSavedSettings();
+    loadDemoData(false);
+  </script>
+</body>
+</html>
