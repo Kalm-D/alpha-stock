@@ -1452,6 +1452,7 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <p id="autoDataStatus" role="status" style="margin:12px 22px;color:#9fb0d0;font-size:14px">Lịch cập nhật dữ liệu: 15:00 thứ Hai–thứ Sáu, giờ Việt Nam.</p>
   <script>
     "use strict";
     // Alpha Stock v1.20 PRO UX hardening layer. Screening formulas/pipeline remain compatible with v1.19.
@@ -2896,9 +2897,36 @@
       renderTable();
     }));
 
+    async function loadPublishedPrices() {
+      $("dataStatus").textContent = "Đang tải dữ liệu tự động…";
+      try {
+        const stamp = Date.now();
+        const metaResponse = await fetch(`data/status.json?t=${stamp}`, {cache: "no-store"});
+        if (!metaResponse.ok) throw new Error("Chưa có bản dữ liệu tự động. Bạn có thể nhập CSV hoặc chọn Dùng demo.");
+        const meta = await metaResponse.json();
+        const response = await fetch(`data/market.csv.gz?t=${stamp}`, {cache: "no-store"});
+        if (!response.ok) throw new Error("Không tải được tệp giá; vui lòng thử lại sau.");
+        if (!("DecompressionStream" in window)) throw new Error("Hãy dùng phiên bản Chrome, Edge, Firefox hoặc Safari mới để đọc dữ liệu tự động.");
+        const text = await new Response(response.body.pipeThrough(new DecompressionStream("gzip"))).text();
+        const rows = parseCsv(text);
+        if (!rows.length) throw new Error("Tệp giá không có dữ liệu hợp lệ.");
+        state.rawRows = rows;
+        state.lastDataSource = "Tự động • " + meta.source;
+        state.qualityView = null;
+        state.activeQualityGroup = "d0";
+        state.currentStage = null;
+        state.currentTab = "all";
+        runScreener();
+        $("autoDataStatus").textContent = `Lịch tải: 15:00 thứ Hai–thứ Sáu (giờ Việt Nam). Hoàn tất: ${new Date(meta.updated_at).toLocaleString("vi-VN", {timeZone:"Asia/Ho_Chi_Minh"})}. Ngày giá mới nhất: ${meta.latest_date}. ${meta.same_day_tickers}/${meta.tickers} mã có dữ liệu ngày tải; ${meta.failed.length} mã tải lỗi. Giá 15:00 có thể chưa chốt cuối phiên.`;
+      } catch (error) {
+        $("autoDataStatus").textContent = "Lịch tải: 15:00 thứ Hai–thứ Sáu (giờ Việt Nam). " + error.message;
+        $("dataStatus").textContent = state.rawRows.length ? "Giữ dữ liệu đang có. " + error.message : error.message;
+      }
+    }
+
     initUxEnhancements();
     loadSavedSettings();
-    loadDemoData(false);
+    loadPublishedPrices();
   </script>
 </body>
 </html>
