@@ -2933,12 +2933,15 @@
               "https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:" + fromDate + "&size=3000&page=1"
             ];
             let livePayload = null;
+            const liveController = new AbortController();
+            const liveTimeout = setTimeout(() => liveController.abort(), 5000);
             for (const liveUrl of liveUrls) {
               try {
-                const liveResponse = await fetch(liveUrl, { cache: "no-store", headers: { Accept: "application/json" } });
+                const liveResponse = await fetch(liveUrl, { signal: liveController.signal, cache: "no-store", headers: { Accept: "application/json" } });
                 if (liveResponse.ok) { livePayload = await liveResponse.json(); break; }
               } catch (_) {}
             }
+            clearTimeout(liveTimeout);
             const liveItems = Array.isArray(livePayload) ? livePayload : (livePayload?.data || livePayload?.items || livePayload?.results || []);
             const liveRows = liveItems.map(item => {
               const ticker = String(item.code || item.symbol || item.ticker || item.stockCode || "").trim().toUpperCase();
