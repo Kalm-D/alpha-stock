@@ -2904,7 +2904,7 @@
         const sharedResponse = await fetch("https://raw.githubusercontent.com/Kalm-D/Scanner/main/public/tracker/data/market.json?ts=" + Date.now(), { cache: "no-store" });
         if (sharedResponse.ok) {
           const payload = await sharedResponse.json();
-          const sharedRows = (payload.symbols || []).flatMap(item => (item.rows || []).map(row => ({
+          let sharedRows = (payload.symbols || []).flatMap(item => (item.rows || []).map(row => ({
             ticker: String(item.ticker || "").toUpperCase(),
             exchange: String(item.exchange || "UNKNOWN").toUpperCase(),
             sector: String(item.sector || "Chưa phân loại"),
@@ -2915,6 +2915,56 @@
             close: Number(row[4]) || 0,
             volume: Number(row[5]) || 0
           }))).filter(row => row.ticker && row.date && row.close > 0);
+          // On every page open, try to append the latest trading session from VNDIRECT.
+          // The published snapshot remains the history fallback when the public API is unavailable.
+          const expectedDate = (() => {
+            const d = new Date();
+            const day = d.getUTCDay();
+            d.setUTCDate(d.getUTCDate() - (day === 0 ? 2 : day === 6 ? 1 : 0));
+            return d.toISOString().slice(0, 10);
+          })();
+          const publishedDate = String(payload.meta?.asOf || "").slice(0, 10);
+          if (publishedDate < expectedDate) {
+            const from = new Date(expectedDate + "T12:00:00Z");
+            from.setUTCDate(from.getUTCDate() - 3);
+            const fromDate = from.toISOString().slice(0, 10);
+            const liveUrls = [
+              "https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:" + fromDate + "&size=3000&page=1",
+              "https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:" + fromDate + "&size=3000&page=1"
+            ];
+            let livePayload = null;
+            for (const liveUrl of liveUrls) {
+              try {
+                const liveResponse = await fetch(liveUrl, { cache: "no-store", headers: { Accept: "application/json" } });
+                if (liveResponse.ok) { livePayload = await liveResponse.json(); break; }
+              } catch (_) {}
+            }
+            const liveItems = Array.isArray(livePayload) ? livePayload : (livePayload?.data || livePayload?.items || livePayload?.results || []);
+            const liveRows = liveItems.map(item => {
+              const ticker = String(item.code || item.symbol || item.ticker || item.stockCode || "").trim().toUpperCase();
+              const date = String(item.date || item.tradingDate || item.time || "").slice(0, 10);
+              const value = key => Number(item[key]);
+              const open = Number(item.adOpen ?? item.open ?? item.o ?? item.basicPrice);
+              const high = Number(item.adHigh ?? item.high ?? item.h ?? item.ceilingPrice);
+              const low = Number(item.adLow ?? item.low ?? item.l ?? item.floorPrice);
+              const close = Number(item.adClose ?? item.close ?? item.c ?? item.average ?? item.basicPrice);
+              const volume = Number(item.nmVolume ?? item.volume ?? item.matchVolume ?? item.totalVolume ?? item.vol ?? 0);
+              if (!/^[A-Z0-9]{3}$|^VNINDEX$/.test(ticker) || !date || ![open, high, low, close].every(Number.isFinite)) return null;
+              const isIndex = ticker === "VNINDEX" || ticker.endsWith("INDEX");
+              const scale = !isIndex && close > 0 && close < 1000 ? 1000 : 1;
+              return { ticker, exchange: String(item.floor || item.exchange || (isIndex ? "INDEX" : "UNKNOWN")).toUpperCase(), sector: isIndex ? "Chỉ số" : "Chưa phân loại", date, open: open * scale, high: high * scale, low: low * scale, close: close * scale, volume: Number.isFinite(volume) ? volume : 0 };
+            }).filter(Boolean);
+            if (liveRows.length) {
+              const merged = new Map(sharedRows.map(row => [row.ticker + "|" + row.date, row]));
+              liveRows.forEach(row => {
+                const key = row.ticker + "|" + row.date;
+                if (row.date >= publishedDate || !merged.has(key)) merged.set(key, row);
+              });
+              sharedRows = [...merged.values()];
+              const latest = sharedRows.reduce((max, row) => row.date > max ? row.date : max, publishedDate);
+              payload.meta = { ...(payload.meta || {}), asOf: latest, refreshedOnOpen: latest > publishedDate, liveSource: "VNDIRECT public API" };
+            }
+          }
           if (sharedRows.length) {
             state.rawRows = sharedRows;
             state.lastDataSource = "Shared market data • Scanner";
