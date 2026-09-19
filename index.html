@@ -2898,6 +2898,41 @@
     }));
 
     async function loadPublishedPrices() {
+      // Prefer the Tracker shared snapshot so Alpha Stock and Tracker use one
+      // price source and one 15:00 Vietnam-time update.
+      try {
+        const sharedResponse = await fetch("https://kalm-d.github.io/Scanner/tracker/data/market.json?ts=" + Date.now(), { cache: "no-store" });
+        if (sharedResponse.ok) {
+          const payload = await sharedResponse.json();
+          const sharedRows = (payload.symbols || []).flatMap(item => (item.rows || []).map(row => ({
+            ticker: String(item.ticker || "").toUpperCase(),
+            exchange: String(item.exchange || "UNKNOWN").toUpperCase(),
+            sector: String(item.sector || "Chưa phân loại"),
+            date: String(row[0] || "").slice(0, 10),
+            open: Number(row[1]) || 0,
+            high: Number(row[2]) || 0,
+            low: Number(row[3]) || 0,
+            close: Number(row[4]) || 0,
+            volume: Number(row[5]) || 0
+          }))).filter(row => row.ticker && row.date && row.close > 0);
+          if (sharedRows.length) {
+            state.rawRows = sharedRows;
+            state.lastDataSource = "Shared market data • Scanner";
+            state.qualityView = null;
+            state.activeQualityGroup = "d0";
+            state.currentStage = null;
+            state.currentTab = "all";
+            state.series = buildSeries(sharedRows);
+            runScreener();
+            $("autoDataStatus").textContent = "Nguồn chung Tracker/Alpha Stock • cập nhật tự động 15:00 thứ Hai–thứ Sáu (giờ Việt Nam). Ngày giá mới nhất: " + (payload.meta?.asOf || "latest") + ".";
+            return;
+          }
+        }
+      } catch (sharedError) {
+        console.warn("Shared Tracker snapshot chưa sẵn sàng; thử nguồn Alpha Stock cũ.", sharedError);
+      }
+      // Fallback below keeps the existing Alpha Stock loader available.
+
       $("dataStatus").textContent = "Đang tải dữ liệu tự động…";
       try {
         const stamp = Date.now();
