@@ -3114,9 +3114,11 @@
   const mobileQuery = window.matchMedia("(max-width: 720px)");
   const topbar = document.querySelector(".topbar");
   const collapseThreshold = 22;
+  const transitionGuardMs = 760;
   let lastScrollY = window.scrollY || 0;
   let directionDistance = 0;
   let lastDirection = 0;
+  let ignoreLayoutUntil = 0;
   let ticking = false;
 
   function measureHeadline() {
@@ -3125,24 +3127,35 @@
     }
   }
 
+  function setHeadlineHidden(hidden, now) {
+    document.body.classList.toggle("mobile-headline-hidden", hidden);
+    directionDistance = 0;
+    lastDirection = 0;
+    ignoreLayoutUntil = now + transitionGuardMs;
+  }
+
   function syncMobileHeadline() {
     const currentY = window.scrollY || 0;
-    const delta = currentY - lastScrollY;
-    const direction = delta > 0 ? 1 : delta < 0 ? -1 : 0;
+    const now = performance.now();
 
     if (!mobileQuery.matches || currentY <= 12) {
       document.body.classList.remove("mobile-headline-hidden");
       directionDistance = 0;
       lastDirection = 0;
-    } else if (direction !== 0) {
-      if (direction !== lastDirection) directionDistance = 0;
-      directionDistance += delta;
-      if (directionDistance >= collapseThreshold) {
-        document.body.classList.add("mobile-headline-hidden");
-      } else if (directionDistance <= -collapseThreshold) {
-        document.body.classList.remove("mobile-headline-hidden");
+      ignoreLayoutUntil = 0;
+    } else if (now >= ignoreLayoutUntil) {
+      const delta = currentY - lastScrollY;
+      const direction = delta > 0 ? 1 : delta < 0 ? -1 : 0;
+      if (direction !== 0) {
+        if (direction !== lastDirection) directionDistance = 0;
+        directionDistance += delta;
+        if (directionDistance >= collapseThreshold) {
+          setHeadlineHidden(true, now);
+        } else if (directionDistance <= -collapseThreshold) {
+          setHeadlineHidden(false, now);
+        }
+        lastDirection = direction;
       }
-      lastDirection = direction;
     }
 
     lastScrollY = currentY;
@@ -3162,19 +3175,18 @@
     measureHeadline();
     requestSync();
   }, { passive: true });
+  const onViewportModeChange = () => {
+    measureHeadline();
+    requestSync();
+  };
   if (mobileQuery.addEventListener) {
-    mobileQuery.addEventListener("change", () => {
-      measureHeadline();
-      requestSync();
-    });
+    mobileQuery.addEventListener("change", onViewportModeChange);
   } else if (mobileQuery.addListener) {
-    mobileQuery.addListener(() => {
-      measureHeadline();
-      requestSync();
-    });
+    mobileQuery.addListener(onViewportModeChange);
   }
 })();
 </script>
+
 
 </body>
 </html>
