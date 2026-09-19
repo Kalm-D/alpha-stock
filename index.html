@@ -2901,9 +2901,15 @@
       // Prefer the Tracker shared snapshot so Alpha Stock and Tracker use one
       // price source and one 15:00 Vietnam-time update.
       try {
-        const sharedResponse = await fetch("https://raw.githubusercontent.com/Kalm-D/Scanner/main/public/tracker/data/market.json?ts=" + Date.now(), { cache: "no-store" });
+        const sharedResponse = await fetch("https://raw.githubusercontent.com/Kalm-D/Scanner/main/public/tracker/data/market.json.gz?ts=" + Date.now(), { cache: "no-store" });
         if (sharedResponse.ok) {
-          const payload = await sharedResponse.json();
+          let payload;
+          if ("DecompressionStream" in window) {
+            const stream = sharedResponse.body.pipeThrough(new DecompressionStream("gzip"));
+            payload = await new Response(stream).json();
+          } else {
+            throw new Error("Trình duyệt không hỗ trợ giải nén snapshot giá chung.");
+          }
           let sharedRows = (payload.symbols || []).flatMap(item => (item.rows || []).map(row => ({
             ticker: String(item.ticker || "").toUpperCase(),
             exchange: String(item.exchange || "UNKNOWN").toUpperCase(),
