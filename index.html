@@ -1237,10 +1237,41 @@
       .topbar .actions { justify-content: flex-start !important; }
     }
 
-    /* Mobile reading mode: reclaim the viewport after the user scrolls into data. */
+        /* Mobile reading mode: smooth headline collapse and data-first ordering. */
     @media (max-width: 720px) {
+      .topbar {
+        --mobile-headline-height: 560px;
+        max-height: var(--mobile-headline-height) !important;
+        overflow: hidden !important;
+        opacity: 1;
+        transform: translateY(0);
+        transition:
+          max-height .65s cubic-bezier(.22,.61,.36,1),
+          opacity .42s ease,
+          transform .65s cubic-bezier(.22,.61,.36,1),
+          padding .65s cubic-bezier(.22,.61,.36,1),
+          margin .65s cubic-bezier(.22,.61,.36,1);
+      }
       body.mobile-headline-hidden .topbar {
-        display: none !important;
+        max-height: 0 !important;
+        opacity: 0 !important;
+        transform: translateY(-12px);
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        border-color: transparent !important;
+        pointer-events: none;
+      }
+      .grid {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .grid > main {
+        order: 1 !important;
+      }
+      .grid > aside.settings {
+        order: 2 !important;
       }
     }
 </style>
@@ -3081,16 +3112,39 @@
 <script>
 (() => {
   const mobileQuery = window.matchMedia("(max-width: 720px)");
+  const topbar = document.querySelector(".topbar");
+  const collapseThreshold = 22;
   let lastScrollY = window.scrollY || 0;
+  let directionDistance = 0;
+  let lastDirection = 0;
   let ticking = false;
+
+  function measureHeadline() {
+    if (topbar) {
+      topbar.style.setProperty("--mobile-headline-height", topbar.scrollHeight + "px");
+    }
+  }
 
   function syncMobileHeadline() {
     const currentY = window.scrollY || 0;
-    if (!mobileQuery.matches || currentY <= 12 || currentY < lastScrollY - 4) {
+    const delta = currentY - lastScrollY;
+    const direction = delta > 0 ? 1 : delta < 0 ? -1 : 0;
+
+    if (!mobileQuery.matches || currentY <= 12) {
       document.body.classList.remove("mobile-headline-hidden");
-    } else if (currentY > lastScrollY + 4) {
-      document.body.classList.add("mobile-headline-hidden");
+      directionDistance = 0;
+      lastDirection = 0;
+    } else if (direction !== 0) {
+      if (direction !== lastDirection) directionDistance = 0;
+      directionDistance += delta;
+      if (directionDistance >= collapseThreshold) {
+        document.body.classList.add("mobile-headline-hidden");
+      } else if (directionDistance <= -collapseThreshold) {
+        document.body.classList.remove("mobile-headline-hidden");
+      }
+      lastDirection = direction;
     }
+
     lastScrollY = currentY;
     ticking = false;
   }
@@ -3101,11 +3155,26 @@
     window.requestAnimationFrame(syncMobileHeadline);
   }
 
-  window.addEventListener("scroll", requestSync, { passive: true });
-  window.addEventListener("resize", requestSync, { passive: true });
-  mobileQuery.addEventListener?.("change", requestSync);
+  measureHeadline();
   syncMobileHeadline();
+  window.addEventListener("scroll", requestSync, { passive: true });
+  window.addEventListener("resize", () => {
+    measureHeadline();
+    requestSync();
+  }, { passive: true });
+  if (mobileQuery.addEventListener) {
+    mobileQuery.addEventListener("change", () => {
+      measureHeadline();
+      requestSync();
+    });
+  } else if (mobileQuery.addListener) {
+    mobileQuery.addListener(() => {
+      measureHeadline();
+      requestSync();
+    });
+  }
 })();
 </script>
+
 </body>
 </html>
