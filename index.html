@@ -1236,6 +1236,13 @@
       }
       .topbar .actions { justify-content: flex-start !important; }
     }
+
+    /* Mobile reading mode: reclaim the viewport after the user scrolls into data. */
+    @media (max-width: 720px) {
+      body.mobile-headline-hidden .topbar {
+        display: none !important;
+      }
+    }
 </style>
 </head>
 <body>
@@ -3070,5 +3077,35 @@
     loadSavedSettings();
     loadPublishedPrices();
   </script>
+
+<script>
+(() => {
+  const mobileQuery = window.matchMedia("(max-width: 720px)");
+  let lastScrollY = window.scrollY || 0;
+  let ticking = false;
+
+  function syncMobileHeadline() {
+    const currentY = window.scrollY || 0;
+    if (!mobileQuery.matches || currentY <= 12 || currentY < lastScrollY - 4) {
+      document.body.classList.remove("mobile-headline-hidden");
+    } else if (currentY > lastScrollY + 4) {
+      document.body.classList.add("mobile-headline-hidden");
+    }
+    lastScrollY = currentY;
+    ticking = false;
+  }
+
+  function requestSync() {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(syncMobileHeadline);
+  }
+
+  window.addEventListener("scroll", requestSync, { passive: true });
+  window.addEventListener("resize", requestSync, { passive: true });
+  mobileQuery.addEventListener?.("change", requestSync);
+  syncMobileHeadline();
+})();
+</script>
 </body>
 </html>
