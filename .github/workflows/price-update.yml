@@ -1,5 +1,7 @@
 name: Cập nhật giá 15h Việt Nam
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: '0 8 * * 1-5'
   workflow_dispatch:
@@ -40,11 +42,12 @@ jobs:
           cp index.html alpha-stock-logo.png huong_dan_su_dung_alpha_stock.pdf site/
           touch site/.nojekyll
       - name: Tải giá ba sàn
+        if: github.event_name != 'push'
         env:
           TEST_ONLY: ${{ inputs.test_only || 'false' }}
         run: python -u update_prices.py
       - uses: actions/cache/save@v4
-        if: always() && inputs.test_only != true
+        if: always() && github.event_name != 'push' && inputs.test_only != true
         with:
           path: price-cache
           key: prices-v1-${{ github.run_id }}
