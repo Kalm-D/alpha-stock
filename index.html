@@ -2952,8 +2952,8 @@
         const sharedResponse = await fetch("https://raw.githubusercontent.com/Kalm-D/tracker/main/public/data/market.json?ts=" + Date.now(), { cache: "no-store" });
         if (sharedResponse.ok) {
           let payload;
-          if ("Decomppayload = await sharedResponse.json();
-                    let sharedRows = (payload.symbols || []).flatMap(item => (item.rows || []).map(row => ({
+          payload = await sharedResponse.json();
+          let sharedRows = (payload.symbols || []).flatMap(item => (item.rows || []).map(row => ({
             ticker: String(item.ticker || "").toUpperCase(),
             exchange: String(item.exchange || "UNKNOWN").toUpperCase(),
             sector: String(item.sector || "Chưa phân loại"),
