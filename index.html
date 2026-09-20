@@ -1538,7 +1538,7 @@
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <p id="autoDataStatus" role="status" style="margin:12px 22px;color:#9fb0d0;font-size:14px">Lịch cập nhật dữ liệu: 15:00 thứ Hai–thứ Sáu, giờ Việt Nam.</p>
+  <p id="autoDataStatus" role="status" style="margin:12px 22px;color:#9fb0d0;font-size:14px">Lịch cập nhật dữ liệu: 10:40 và 15:00, thứ Hai–thứ Sáu, giờ Việt Nam. Ưu tiên snapshot mới nhất; trước 10:40 dùng dữ liệu chiều gần nhất.</p>
   <script>
     "use strict";
     // Alpha Stock v1.20 PRO UX hardening layer. Screening formulas/pipeline remain compatible with v1.19.
@@ -2985,7 +2985,7 @@
 
     async function loadPublishedPrices() {
       // Prefer the Tracker shared snapshot so Alpha Stock and Tracker use one
-      // price source and one 15:00 Vietnam-time update.
+      // price source and two Vietnam-time updates at 10:40 and 15:00 on weekdays.
       try {
         const sharedResponse = await fetch("https://raw.githubusercontent.com/Kalm-D/tracker/main/public/data/market.json.gz?ts=" + Date.now(), { cache: "no-store" });
         if (sharedResponse.ok) {
@@ -3069,7 +3069,7 @@
             state.currentTab = "all";
             state.series = buildSeries(sharedRows);
             runScreener();
-            $("autoDataStatus").textContent = "Nguồn chung Tracker/Alpha Stock • cập nhật tự động 15:00 thứ Hai–thứ Sáu (giờ Việt Nam). Ngày giá mới nhất: " + (payload.meta?.asOf || "latest") + ".";
+            $("autoDataStatus").textContent = "Nguồn chung Tracker/Alpha Stock • cập nhật tự động 10:40 và 15:00, thứ Hai–thứ Sáu (giờ Việt Nam). Ưu tiên dữ liệu mới nhất; nếu snapshot sáng chưa có thì dùng snapshot chiều gần nhất. Ngày giá mới nhất: " + (payload.meta?.asOf || "latest") + ".";
             return;
           }
         }
@@ -3097,9 +3097,9 @@
         state.currentStage = null;
         state.currentTab = "all";
         runScreener();
-        $("autoDataStatus").textContent = `Lịch tải: 15:00 thứ Hai–thứ Sáu (giờ Việt Nam). Hoàn tất: ${new Date(meta.updated_at).toLocaleString("vi-VN", {timeZone:"Asia/Ho_Chi_Minh"})}. Ngày giá mới nhất: ${meta.latest_date}. ${meta.same_day_tickers}/${meta.tickers} mã có dữ liệu ngày tải; ${meta.failed.length} mã tải lỗi. Giá 15:00 có thể chưa chốt cuối phiên.`;
+        $("autoDataStatus").textContent = `Lịch tải: 10:40 và 15:00, thứ Hai–thứ Sáu (giờ Việt Nam). Hoàn tất: ${new Date(meta.updated_at).toLocaleString("vi-VN", {timeZone:"Asia/Ho_Chi_Minh"})}. Ngày giá mới nhất: ${meta.latest_date}. ${meta.same_day_tickers}/${meta.tickers} mã có dữ liệu ngày tải; ${meta.failed.length} mã tải lỗi. Giá buổi sáng có thể chưa chốt cuối phiên.`;
       } catch (error) {
-        $("autoDataStatus").textContent = "Lịch tải: 15:00 thứ Hai–thứ Sáu (giờ Việt Nam). " + error.message;
+        $("autoDataStatus").textContent = "Lịch tải: 10:40 và 15:00, thứ Hai–thứ Sáu (giờ Việt Nam). " + error.message;
         $("dataStatus").textContent = state.rawRows.length ? "Giữ dữ liệu đang có. " + error.message : error.message;
       }
     }
@@ -3107,6 +3107,10 @@
     initUxEnhancements();
     loadSavedSettings();
     loadPublishedPrices();
+    // Kiểm tra snapshot chung định kỳ khi trang đang mở để nhận bản 10:40/15:00 sớm nhất.
+    window.setInterval(() => {
+      if (document.visibilityState !== "hidden") loadPublishedPrices();
+    }, 10 * 60 * 1000);
   </script>
 
 <script>
