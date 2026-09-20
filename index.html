@@ -1931,6 +1931,14 @@
       return map;
     }
 
+    function stableSector(rows) {
+      for (let i = rows.length - 1; i >= 0; i--) {
+        const sector = String(rows[i]?.sector || "").trim();
+        if (sector && sector.toLowerCase() !== "chưa phân loại") return sector;
+      }
+      return "Chưa phân loại";
+    }
+
     function avg(values) {
       const valid = values.filter(Number.isFinite);
       if (!valid.length) return NaN;
@@ -1996,7 +2004,7 @@
         list.push({
           ticker,
           exchange: last.exchange,
-          sector: last.sector,
+          sector: stableSector(arr),
           date: last.date,
           dataQuality: qualityMeta.status,
           dataQualityLabel: qualityMeta.label,
@@ -3007,6 +3015,13 @@
             close: Number(row[4]) || 0,
             volume: Number(row[5]) || 0
           }))).filter(row => row.ticker && row.date && row.close > 0);
+          const metadataByTicker = new Map((payload.symbols || []).map(item => [
+            String(item.ticker || "").trim().toUpperCase(),
+            {
+              exchange: String(item.exchange || "UNKNOWN").trim().toUpperCase(),
+              sector: String(item.sector || "").trim()
+            }
+          ]));
           // On every page open, try to append the latest trading session from VNDIRECT.
           // The published snapshot remains the history fallback when the public API is unavailable.
           const expectedDate = (() => {
@@ -3038,7 +3053,6 @@
             const liveRows = liveItems.map(item => {
               const ticker = String(item.code || item.symbol || item.ticker || item.stockCode || "").trim().toUpperCase();
               const date = String(item.date || item.tradingDate || item.time || "").slice(0, 10);
-              const value = key => Number(item[key]);
               const open = Number(item.adOpen ?? item.open ?? item.o ?? item.basicPrice);
               const high = Number(item.adHigh ?? item.high ?? item.h ?? item.ceilingPrice);
               const low = Number(item.adLow ?? item.low ?? item.l ?? item.floorPrice);
@@ -3046,8 +3060,9 @@
               const volume = Number(item.nmVolume ?? item.volume ?? item.matchVolume ?? item.totalVolume ?? item.vol ?? 0);
               if (!/^[A-Z0-9]{3}$|^VNINDEX$/.test(ticker) || !date || ![open, high, low, close].every(Number.isFinite)) return null;
               const isIndex = ticker === "VNINDEX" || ticker.endsWith("INDEX");
+              const saved = metadataByTicker.get(ticker) || {};
               const scale = !isIndex && close > 0 && close < 1000 ? 1000 : 1;
-              return { ticker, exchange: String(item.floor || item.exchange || (isIndex ? "INDEX" : "UNKNOWN")).toUpperCase(), sector: isIndex ? "Chỉ số" : "Chưa phân loại", date, open: open * scale, high: high * scale, low: low * scale, close: close * scale, volume: Number.isFinite(volume) ? volume : 0 };
+              return { ticker, exchange: saved.exchange || String(item.floor || item.exchange || (isIndex ? "INDEX" : "UNKNOWN")).toUpperCase(), sector: isIndex ? "Chỉ số" : saved.sector || "Chưa phân loại", date, open: open * scale, high: high * scale, low: low * scale, close: close * scale, volume: Number.isFinite(volume) ? volume : 0 };
             }).filter(Boolean);
             if (liveRows.length) {
               const merged = new Map(sharedRows.map(row => [row.ticker + "|" + row.date, row]));
