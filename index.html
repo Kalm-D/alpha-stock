@@ -1464,6 +1464,7 @@
                     <th data-sort="date">Ngày</th>
                     <th data-sort="staleSessions">Data</th>
                     <th data-sort="close">Giá</th>
+                    <th>Khối lượng (CP)</th>
                     <th data-sort="avgValue20B">GTGD TB20</th>
                     <th data-sort="trendStage">Trend</th>
                     <th data-sort="highGapPct">Cách đỉnh 52W</th>
@@ -2421,6 +2422,7 @@
         <td data-label="Ngày">${escapeHtml(x.date)}</td>
         <td data-label="Data">${pill(x.dataQualityLabel || "—", x.dataQualityTone || "warn")}</td>
         <td class="money" data-label="Giá">${fmtPrice(x.close)}</td>
+        <td class="money" data-label="Khối lượng (CP)">${fmtNum(x.rows?.at(-1)?.volume ?? NaN, 0)}</td>
         <td class="money" data-label="GTGD TB20">${fmtNum(x.avgValue20B, 2)} tỷ</td>
         <td data-label="Trend">${pill(x.trendStage, x.trendTone)}</td>
         <td class="numcell" data-label="Cách đỉnh 52W">${fmtPct(x.highGapPct, 1)}</td>
@@ -2448,6 +2450,7 @@
       $("detailFacts").innerHTML = [
         ["Giá", fmtPrice(x.close)],
         ["Ngày dữ liệu", x.date],
+        ["Khối lượng phiên (CP)", fmtNum(x.rows?.at(-1)?.volume ?? NaN, 0)],
         ["Data Gate", `${x.dataQualityLabel} (${Number.isFinite(x.staleSessions) ? x.staleSessions : "—"} phiên)`],
         ["Trend", x.trendStage],
         ["RS Percentile", x.rsPercentile],
@@ -3209,3 +3212,4 @@
 
 </body>
 </html>
+
