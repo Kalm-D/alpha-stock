@@ -2998,7 +2998,15 @@
       // Prefer the Tracker shared snapshot so Alpha Stock and Tracker use one
       // price source and two Vietnam-time updates at 10:40 and 15:00 on weekdays.
       try {
-        const sharedResponse = await fetch("https://raw.githubusercontent.com/Kalm-D/tracker/main/public/data/market.json.gz?ts=" + Date.now(), { cache: "no-store" });
+        // Dùng cùng bản dữ liệu đã xuất bản với Tracker; GitHub Raw là dự phòng.
+        let sharedResponse;
+        for (const sharedUrl of ["https://kalm-d.github.io/tracker/data/market.json.gz", "https://raw.githubusercontent.com/Kalm-D/tracker/main/public/data/market.json.gz"]) {
+          try {
+            sharedResponse = await fetch(sharedUrl + "?ts=" + Date.now(), { cache: "no-store" });
+            if (sharedResponse.ok) break;
+          } catch (_) {}
+        }
+        if (!sharedResponse) throw new Error("Không tải được dữ liệu chung.");
         if (sharedResponse.ok) {
           let payload;
           if ("DecompressionStream" in window) {
