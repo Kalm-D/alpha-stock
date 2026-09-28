@@ -1329,8 +1329,8 @@
         <div class="panel-body">
           <div class="setting-group">
             <h3>0. Data Quality Gate</h3>
-            <div class="hint">Chọn nhóm ngày dữ liệu bằng các ô trong bảng <b>Data Quality Gate</b>: Sau ngày chuẩn, D0, D-1, D-2 đến D-5, Trễ &gt; 5 phiên hoặc Thiếu lịch sử. Pipeline sẽ tự lọc theo nhóm đang chọn.</div>
-            <div class="muted-small">Nhóm đang chọn: <b id="activeQualityLabel">Ngày chuẩn / D0</b></div>
+            <div class="hint">Chọn nhóm ngày dữ liệu bằng các ô trong bảng <b>Data Quality Gate</b>: D0 + D-1 (mặc định), Sau ngày chuẩn, D0, D-1, D-2 đến D-5, Trễ &gt; 5 phiên hoặc Thiếu lịch sử. Pipeline sẽ tự lọc theo nhóm đang chọn.</div>
+            <div class="muted-small">Nhóm đang chọn: <b id="activeQualityLabel">D0 + D-1</b></div>
           </div>
 
           <div class="setting-group">
@@ -1389,7 +1389,7 @@
           <div class="card">
             <div class="label">Nhóm ngày đang chọn</div>
             <div id="qualityValidCount" class="metric">0</div>
-            <div id="activeQualitySubmetric" class="submetric">Ngày chuẩn / D0</div>
+            <div id="activeQualitySubmetric" class="submetric">D0 + D-1</div>
           </div>
           <div class="card">
             <div class="label">Không vào pipeline hiện tại</div>
@@ -1528,7 +1528,7 @@
       </div>
       <div class="modal-body help-body">
         <div class="help-step"><b>1. Chuẩn bị dữ liệu</b><span>Khuyến nghị chạy file exporter trong thư mục <code>tools</code>, sau đó nhập CSV vừa tạo. Dữ liệu demo chỉ để thử giao diện.</span></div>
-        <div class="help-step"><b>2. Chọn Data Quality Gate</b><span>Ưu tiên <b>Ngày chuẩn / D0</b>. Các nhóm D-1, D-2… dùng để kiểm tra dữ liệu cũ, không nên dùng xác nhận breakout mới.</span></div>
+        <div class="help-step"><b>2. Chọn Data Quality Gate</b><span>Ưu tiên <b>D0 + D-1</b>. Các nhóm D-1, D-2… dùng để kiểm tra dữ liệu cũ, không nên dùng xác nhận breakout mới.</span></div>
         <div class="help-step"><b>3. Chỉnh ngưỡng nếu cần</b><span>Mặc định v1.19 được giữ lại. Các thay đổi được tự lưu trên trình duyệt; nút ↺ đưa toàn bộ về mặc định.</span></div>
         <div class="help-step"><b>4. Chọn một vòng pipeline</b><span>Bấm Thanh khoản, Trend, Leader, Early, Base hoặc Gần Breakout để hiện danh sách cổ phiếu còn lại sau vòng đó.</span></div>
         <div class="help-step"><b>5. Mở Chi tiết và tạo Watchlist</b><span>Kiểm tra chart, pivot, stop kỹ thuật, risk và lưu các mã cần theo dõi. Alpha Stock là công cụ sàng lọc, không phải khuyến nghị mua bán.</span></div>
@@ -1575,7 +1575,7 @@
       currentTab: "all",
       qualityView: null,
       qualityListVisible: false,
-      activeQualityGroup: "d0",
+      activeQualityGroup: "recent",
       sortKey: "rsPercentile",
       sortDir: "desc",
       watchlist: new Set(readWatchlistStorage()),
@@ -1787,6 +1787,7 @@
 
     function qualityGroupLabel(key) {
       return ({
+        recent: "D0 + D-1",
         future: "Sau ngày chuẩn",
         d0: "Ngày chuẩn / D0",
         d1: "D-1",
@@ -1997,7 +1998,7 @@
         const qualityMeta = state.quality.byTicker.get(ticker) || { status: "UNKNOWN", label: "—", tone: "warn", staleSessions: NaN };
         const baseInfo = detectBase(arr, cfg, avgVol50, m50);
         let breakoutInfo = detectBreakout(arr, cfg, baseInfo.pivot, avgVol50);
-        if (qualityMeta.status !== "D0") {
+        if (!["D0", "D1"].includes(qualityMeta.status)) {
           breakoutInfo = { status: `Không xác nhận (${qualityMeta.label})`, tone: "warn", pass: false };
         }
         const stop = riskStop(arr, baseInfo.pivot, close);
@@ -2133,7 +2134,20 @@
         else { standardDate = latestDates.sort().at(-1); method = "Ngày mới nhất trong CSV"; }
       }
 
-      const calendar = series.get(cfg.benchmarkTicker)?.map(x => x.date) || [...new Set(state.rawRows.filter(r => isPlainStockTicker(r.ticker) || isBenchmarkOrIndexTicker(r.ticker)).map(r => r.date))].sort();
+      // Không để chỉ số cập nhật chậm đẩy toàn bộ cổ phiếu sang nhóm tương lai.
+      const todayVN = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Ho_Chi_Minh', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date());
+      const stockDates = new Map();
+      for (const [ticker, rows] of series) {
+        const date = rows.at(-1)?.date;
+        if (isPlainStockTicker(ticker) && date <= todayVN) stockDates.set(date, (stockDates.get(date) || 0) + 1);
+      }
+      const quorum = Math.min(stockDates.size ? [...stockDates.values()].reduce((a,b)=>a+b,0) : 3, Math.max(3, Math.ceil(tickers.filter(isPlainStockTicker).length * 0.01)));
+      const marketDate = [...stockDates].filter(([,n])=>n >= quorum).map(([d])=>d).sort().at(-1);
+      if (marketDate && (!standardDate || standardDate > todayVN || marketDate > standardDate)) {
+        standardDate = marketDate;
+        method = 'Ngày giao dịch mới nhất được xác nhận bởi dữ liệu cổ phiếu';
+      }
+      const calendar = [...new Set([...series].filter(([t])=>isPlainStockTicker(t) || isBenchmarkOrIndexTicker(t)).flatMap(([,rows])=>rows.map(r=>r.date)))].filter(d=>d <= todayVN).sort();
       const dateIndex = new Map(calendar.map((d, i) => [d, i]));
       const stdIdx = dateIndex.get(standardDate);
       const byTicker = new Map();
@@ -2156,7 +2170,7 @@
         } else if (staleSessions < 0) { status = "FUTURE"; label = "Sau ngày chuẩn"; tone = "bad"; action = "Nhóm kiểm tra riêng: ngày dữ liệu lớn hơn ngày chuẩn."; counts.future++; }
         else if (arr.length < 210) { status = "TOO_SHORT"; label = "Thiếu lịch sử"; tone = "warn"; action = "Không đủ dữ liệu MA200/52W."; counts.tooShort++; }
         else if (staleSessions === 0) { status = "D0"; label = "D0"; tone = "good"; action = "Có thể chạy pipeline theo nhóm D0."; counts.d0++; }
-        else if (staleSessions === 1) { status = "D1"; label = "D-1"; tone = "info"; action = "Có thể chạy pipeline tham khảo, không xác nhận breakout mới."; counts.d1++; }
+        else if (staleSessions === 1) { status = "D1"; label = "D-1"; tone = "info"; action = "Dùng trong bộ lọc D0 + D-1; tín hiệu được tính tại ngày dữ liệu của mã."; counts.d1++; }
         else if (staleSessions <= 5) { status = "D2_D5"; label = `D-${staleSessions}`; tone = "warn"; action = "Chạy pipeline tham khảo, không dùng để xác nhận tín hiệu mới."; counts.d2to5++; }
         else { status = "STALE"; label = `Trễ ${staleSessions} phiên`; tone = "bad"; action = "Dữ liệu quá cũ. Chỉ xem tham khảo nếu cần."; counts.stale++; }
 
@@ -2169,23 +2183,24 @@
         else if (status === "STALE") groups.stale.push(item);
         else if (status === "TOO_SHORT") groups.tooShort.push(item);
         else if (status === "INVALID") groups.invalid.push(item);
-        if (!["D0","INDEX"].includes(status)) groups.excluded.push(item);
-        if (!["D0","INDEX"].includes(status) && samples.length < 120) samples.push(item);
+        if (!["D0","D1","INDEX"].includes(status)) groups.excluded.push(item);
+        if (!["D0","D1","INDEX"].includes(status) && samples.length < 120) samples.push(item);
       }
 
+      groups.recent = [...groups.d0, ...groups.d1];
       for (const key of Object.keys(groups)) groups[key].sort((a,b) => a.ticker.localeCompare(b.ticker));
 
       const today = new Date();
       const todayStr = today.toISOString().slice(0,10);
       const ageDays = daysBetween(standardDate, todayStr);
-      const activeGroup = state.activeQualityGroup || "d0";
+      const activeGroup = state.activeQualityGroup || "recent";
       const activeTickers = new Set((groups[activeGroup] || []).map(x => x.ticker));
       return { standardDate, method, ageDays, totalTickers: tickers.length, activeTickers, byTicker, counts, groups, samples };
     }
 
     function getActiveQualityTickerSet() {
       const q = state.quality || emptyQuality();
-      const group = state.activeQualityGroup || "d0";
+      const group = state.activeQualityGroup || "recent";
       return new Set((q.groups?.[group] || []).map(x => x.ticker));
     }
 
@@ -2252,8 +2267,9 @@
       const q = state.quality || emptyQuality();
       const c = q.counts || {};
       const current = state.qualityView;
-      const active = state.activeQualityGroup || "d0";
+      const active = state.activeQualityGroup || "recent";
       const cards = [
+        ["recent", "D0 + D-1", (c.d0 || 0) + (c.d1 || 0), "Dùng dữ liệu mới nhất của mỗi mã trong hai phiên"],
         ["future", "Sau ngày chuẩn", c.future || 0, "Ngày dữ liệu lớn hơn ngày chuẩn"],
         ["d0", "Ngày chuẩn / D0", c.d0 || 0, "Lọc pipeline theo đúng ngày chuẩn"],
         ["d1", "D-1", c.d1 || 0, "Lọc pipeline theo nhóm trễ 1 phiên"],
@@ -2294,6 +2310,7 @@
         return;
       }
       const labels = {
+        recent: "D0 + D-1",
         future: "Sau ngày chuẩn",
         d0: "Ngày chuẩn / D0",
         d1: "D-1",
@@ -2464,7 +2481,7 @@
       ].map(([k,v]) => `<div class="fact"><div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div></div>`).join("");
       $("detailNotes").innerHTML = `<h3>Ghi chú phân tích</h3>
         <p>Pipeline hiện tại: ${escapeHtml(x.liquidityPass ? "Đạt thanh khoản" : "Không đạt thanh khoản")} → ${escapeHtml(x.trendStage)} → ${escapeHtml(x.leaderPass ? "Leader Track" : x.earlyPass ? "Early Watch Track" : "Chưa đạt RS split")} → ${escapeHtml(x.baseStatus)} → ${escapeHtml(x.breakoutStatus)}.</p>
-        <p style="margin-top:8px;">Nếu Data Gate không phải D0, tín hiệu breakout/volume mới nhất sẽ không được xác nhận. Fundamental Snapshot sẽ được bổ sung ở phase sau, chỉ kích hoạt cho các mã đã lưu vào Watchlist.</p>`;
+        <p style="margin-top:8px;">Nếu Data Gate ngoài D0/D-1, tín hiệu breakout/volume mới nhất sẽ không được xác nhận. Fundamental Snapshot sẽ được bổ sung ở phase sau, chỉ kích hoạt cho các mã đã lưu vào Watchlist.</p>`;
       $("modalBackdrop").style.display = "flex";
       setTimeout(() => drawChart(x), 20);
     }
@@ -2817,7 +2834,7 @@
         state.currentTab = "all";
         state.lastDataSource = provider.name;
         state.qualityView = null;
-        state.activeQualityGroup = "d0";
+        state.activeQualityGroup = "recent";
         setUpdateUi(false, `Đã cập nhật ${finalRows.length.toLocaleString("vi-VN")} dòng dữ liệu từ ${provider.name}. Thành công ${success}/${universe.length} mã, lỗi ${failed}.`);
         runScreener();
         toast(`Cập nhật xong: ${success} mã có dữ liệu hợp lệ.`);
@@ -2838,7 +2855,7 @@
       state.rawRows = generateDemoRows();
       state.lastDataSource = "Demo";
       state.qualityView = null;
-      state.activeQualityGroup = "d0";
+      state.activeQualityGroup = "recent";
       state.currentStage = null;
       state.series = buildSeries(state.rawRows);
       if (show) toast("Đã nạp dữ liệu demo.");
@@ -2968,7 +2985,7 @@
         state.rawRows = rows;
         state.lastDataSource = file.name || "CSV Import";
         state.qualityView = null;
-        state.activeQualityGroup = "d0";
+        state.activeQualityGroup = "recent";
         state.currentStage = null;
         state.currentTab = "all";
         runScreener();
@@ -3090,7 +3107,7 @@
             state.rawRows = sharedRows;
             state.lastDataSource = "Shared market data • Scanner";
             state.qualityView = null;
-            state.activeQualityGroup = "d0";
+            state.activeQualityGroup = "recent";
             state.currentStage = null;
             state.currentTab = "all";
             state.series = buildSeries(sharedRows);
@@ -3119,7 +3136,7 @@
         state.rawRows = rows;
         state.lastDataSource = "Tự động • " + meta.source;
         state.qualityView = null;
-        state.activeQualityGroup = "d0";
+        state.activeQualityGroup = "recent";
         state.currentStage = null;
         state.currentTab = "all";
         runScreener();
@@ -3220,4 +3237,5 @@
 
 </body>
 </html>
+
 
